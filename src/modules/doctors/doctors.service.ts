@@ -24,8 +24,24 @@ export class DoctorsService {
     return this.doctorsRepo.save(doctor);
   }
 
-  async findAll(): Promise<Doctor[]> {
-    return this.doctorsRepo.find({ where: { is_active: true }, order: { name: 'ASC' } });
+  async findAll(page = 1, limit = 10, search?: string) {
+    const qb = this.doctorsRepo.createQueryBuilder('doctor')
+      .where('doctor.is_active = true');
+
+    if (search) {
+      qb.andWhere(
+        '(doctor.name ILIKE :s OR doctor.specialization ILIKE :s OR doctor.email ILIKE :s)',
+        { s: `%${search}%` },
+      );
+    }
+
+    const [data, total] = await qb
+      .orderBy('doctor.name', 'ASC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return { data, total, page, limit };
   }
 
   async findOne(id: string): Promise<Doctor> {

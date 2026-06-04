@@ -16,11 +16,26 @@ export class WaitlistService {
     return this.waitlistRepo.save(entry);
   }
 
-  async findAll(): Promise<Waitlist[]> {
-    return this.waitlistRepo.find({
-      relations: ['patient', 'doctor'],
-      order: { created_at: 'ASC' },
-    });
+  async findAll(page = 1, limit = 10, search?: string) {
+    const qb = this.waitlistRepo
+      .createQueryBuilder('waitlist')
+      .leftJoinAndSelect('waitlist.patient', 'patient')
+      .leftJoinAndSelect('waitlist.doctor', 'doctor');
+
+    if (search) {
+      qb.where(
+        '(patient.first_name ILIKE :s OR patient.last_name ILIKE :s OR patient.patient_code ILIKE :s OR doctor.name ILIKE :s)',
+        { s: `%${search}%` },
+      );
+    }
+
+    const [data, total] = await qb
+      .orderBy('waitlist.created_at', 'ASC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return { data, total, page, limit };
   }
 
   async findOne(id: string): Promise<Waitlist> {

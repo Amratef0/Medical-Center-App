@@ -1,10 +1,22 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Query, Param, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { IsEmail, IsEnum } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 import { JwtAccessGuard } from '../../common/guards/jwt.guards';
 import { RolesGuard, Roles } from '../../common/guards/roles.guard';
 import { UserRole } from './user.entity';
+
+class AssignRoleDto {
+  @ApiProperty({ example: 'user@mcsos.com' })
+  @IsEmail()
+  email: string;
+
+  @ApiProperty({ enum: UserRole })
+  @IsEnum(UserRole)
+  role: UserRole;
+}
 
 @ApiTags('Users')
 @ApiBearerAuth('access-token')
@@ -23,8 +35,15 @@ export class UsersController {
   @Get()
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Get all users (Admin only)' })
-  findAll() {
-    return this.usersService.findAll();
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  findAll(
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Query('search') search?: string,
+  ) {
+    return this.usersService.findAll(+page, +limit, search);
   }
 
   @Get(':id')
@@ -32,6 +51,13 @@ export class UsersController {
   @ApiOperation({ summary: 'Get user by ID (Admin only)' })
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
+  }
+
+  @Patch('assign-role')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Assign role to user by email (Admin only)' })
+  assignRole(@Body() dto: AssignRoleDto) {
+    return this.usersService.updateRole(dto.email, dto.role);
   }
 
   @Put(':id')

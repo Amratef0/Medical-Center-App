@@ -19,19 +19,41 @@ export class SessionsService {
     return this.sessionsRepo.save(session);
   }
 
-  async findAll(): Promise<Session[]> {
-    return this.sessionsRepo.find({
-      relations: ['patient', 'doctor', 'attendance'],
-      order: { session_date: 'DESC' },
-    });
+  async findAll(page = 1, limit = 10, search?: string) {
+    const qb = this.sessionsRepo
+      .createQueryBuilder('session')
+      .leftJoinAndSelect('session.patient', 'patient')
+      .leftJoinAndSelect('session.doctor', 'doctor')
+      .leftJoinAndSelect('session.attendance', 'attendance');
+
+    if (search) {
+      qb.where(
+        '(patient.first_name ILIKE :s OR patient.last_name ILIKE :s OR patient.patient_code ILIKE :s OR doctor.name ILIKE :s)',
+        { s: `%${search}%` },
+      );
+    }
+
+    const [data, total] = await qb
+      .orderBy('session.session_date', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return { data, total, page, limit };
   }
 
-  async findByPatient(patientId: string): Promise<Session[]> {
-    return this.sessionsRepo.find({
-      where: { patient_id: patientId },
-      relations: ['doctor', 'attendance'],
-      order: { session_date: 'DESC' },
-    });
+  async findByPatient(patientId: string, page = 1, limit = 10) {
+    const [data, total] = await this.sessionsRepo
+      .createQueryBuilder('session')
+      .leftJoinAndSelect('session.doctor', 'doctor')
+      .leftJoinAndSelect('session.attendance', 'attendance')
+      .where('session.patient_id = :patientId', { patientId })
+      .orderBy('session.session_date', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return { data, total, page, limit };
   }
 
   async findOne(id: string): Promise<Session> {

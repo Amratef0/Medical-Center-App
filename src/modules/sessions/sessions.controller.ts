@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query,UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { SessionsService } from './sessions.service';
 import { CreateSessionDto, UpdateSessionDto, CreateAttendanceDto } from './dto/session.dto';
 import { JwtAccessGuard } from '../../common/guards/jwt.guards';
@@ -21,16 +21,29 @@ export class SessionsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all sessions' })
-  findAll() {
-    return this.sessionsService.findAll();
-  }
+@ApiOperation({ summary: 'Get all sessions' })
+@ApiQuery({ name: 'page', required: false, type: Number })
+@ApiQuery({ name: 'limit', required: false, type: Number })
+@ApiQuery({ name: 'search', required: false, type: String })
+findAll(
+  @Query('page') page = 1,
+  @Query('limit') limit = 10,
+  @Query('search') search?: string,
+) {
+  return this.sessionsService.findAll(+page, +limit, search);
+}
 
-  @Get('patient/:patientId')
-  @ApiOperation({ summary: 'Get all sessions for a patient' })
-  findByPatient(@Param('patientId') patientId: string) {
-    return this.sessionsService.findByPatient(patientId);
-  }
+@Get('patient/:patientId')
+@ApiOperation({ summary: 'Get all sessions for a patient' })
+@ApiQuery({ name: 'page', required: false, type: Number })
+@ApiQuery({ name: 'limit', required: false, type: Number })
+findByPatient(
+  @Param('patientId') patientId: string,
+  @Query('page') page = 1,
+  @Query('limit') limit = 10,
+) {
+  return this.sessionsService.findByPatient(patientId, +page, +limit);
+}
 
   @Get(':id')
   @ApiOperation({ summary: 'Get session by ID' })

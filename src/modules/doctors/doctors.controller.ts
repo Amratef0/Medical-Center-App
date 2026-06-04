@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query,UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { DoctorsService } from './doctors.service';
 import {
   CreateDoctorDto,
@@ -25,11 +25,18 @@ export class DoctorsController {
     return this.doctorsService.create(dto);
   }
 
-  @Get()
-  @ApiOperation({ summary: 'Get all active doctors' })
-  findAll() {
-    return this.doctorsService.findAll();
-  }
+@Get()
+@ApiOperation({ summary: 'Get all active doctors' })
+@ApiQuery({ name: 'page', required: false, type: Number })
+@ApiQuery({ name: 'limit', required: false, type: Number })
+@ApiQuery({ name: 'search', required: false, type: String })
+findAll(
+  @Query('page') page = 1,
+  @Query('limit') limit = 10,
+  @Query('search') search?: string,
+) {
+  return this.doctorsService.findAll(+page, +limit, search);
+}
 
   @Get(':id')
   @ApiOperation({ summary: 'Get doctor by ID with availability' })

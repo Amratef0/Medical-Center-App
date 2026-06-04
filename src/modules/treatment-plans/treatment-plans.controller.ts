@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Delete, Body, Param,Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { TreatmentPlansService } from './treatment-plans.service';
 import { CreateTreatmentPlanDto, UpdateTreatmentPlanDto } from './dto/treatment-plan.dto';
 import { JwtAccessGuard } from '../../common/guards/jwt.guards';
@@ -20,19 +20,32 @@ export class TreatmentPlansController {
     return this.treatmentPlansService.create(dto);
   }
 
-  @Get()
-  @Roles(UserRole.DOCTOR, UserRole.ADMIN, UserRole.OPERATIONS_MANAGER, UserRole.RECEPTIONIST)
-  @ApiOperation({ summary: 'Get all treatment plans' })
-  findAll() {
-    return this.treatmentPlansService.findAll();
-  }
+ @Get()
+@Roles(UserRole.DOCTOR, UserRole.ADMIN, UserRole.OPERATIONS_MANAGER, UserRole.RECEPTIONIST)
+@ApiOperation({ summary: 'Get all treatment plans' })
+@ApiQuery({ name: 'page', required: false, type: Number })
+@ApiQuery({ name: 'limit', required: false, type: Number })
+@ApiQuery({ name: 'search', required: false, type: String })
+findAll(
+  @Query('page') page = 1,
+  @Query('limit') limit = 10,
+  @Query('search') search?: string,
+) {
+  return this.treatmentPlansService.findAll(+page, +limit, search);
+}
 
-  @Get('patient/:patientId')
-  @Roles(UserRole.DOCTOR, UserRole.ADMIN, UserRole.OPERATIONS_MANAGER, UserRole.RECEPTIONIST)
-  @ApiOperation({ summary: 'Get treatment plans for a specific patient' })
-  findByPatient(@Param('patientId') patientId: string) {
-    return this.treatmentPlansService.findByPatient(patientId);
-  }
+@Get('patient/:patientId')
+@Roles(UserRole.DOCTOR, UserRole.ADMIN, UserRole.OPERATIONS_MANAGER, UserRole.RECEPTIONIST)
+@ApiOperation({ summary: 'Get treatment plans for a specific patient' })
+@ApiQuery({ name: 'page', required: false, type: Number })
+@ApiQuery({ name: 'limit', required: false, type: Number })
+findByPatient(
+  @Param('patientId') patientId: string,
+  @Query('page') page = 1,
+  @Query('limit') limit = 10,
+) {
+  return this.treatmentPlansService.findByPatient(patientId, +page, +limit);
+}
 
   @Get(':id')
   @Roles(UserRole.DOCTOR, UserRole.ADMIN, UserRole.OPERATIONS_MANAGER, UserRole.RECEPTIONIST)

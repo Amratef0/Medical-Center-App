@@ -31,10 +31,23 @@ export class PatientsService {
     return this.patientsRepo.save(patient);
   }
 
-  async findAll(): Promise<Patient[]> {
-    return this.patientsRepo.find({
-      order: { created_at: 'DESC' },
-    });
+  async findAll(page = 1, limit = 10, search?: string) {
+    const qb = this.patientsRepo.createQueryBuilder('patient');
+
+    if (search) {
+      qb.where(
+        '(patient.first_name ILIKE :s OR patient.last_name ILIKE :s OR patient.phone ILIKE :s OR patient.email ILIKE :s OR patient.patient_code ILIKE :s)',
+        { s: `%${search}%` },
+      );
+    }
+
+    const [data, total] = await qb
+      .orderBy('patient.created_at', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return { data, total, page, limit };
   }
 
   async findOne(id: string): Promise<Patient> {

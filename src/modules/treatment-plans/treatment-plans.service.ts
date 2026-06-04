@@ -29,19 +29,41 @@ export class TreatmentPlansService {
     return this.findOne(saved.id);
   }
 
-  async findAll(): Promise<TreatmentPlan[]> {
-    return this.plansRepo.find({
-      relations: ['patient', 'doctor', 'plan_services'],
-      order: { created_at: 'DESC' },
-    });
+  async findAll(page = 1, limit = 10, search?: string) {
+    const qb = this.plansRepo
+      .createQueryBuilder('plan')
+      .leftJoinAndSelect('plan.patient', 'patient')
+      .leftJoinAndSelect('plan.doctor', 'doctor')
+      .leftJoinAndSelect('plan.plan_services', 'plan_services');
+
+    if (search) {
+      qb.where(
+        '(patient.first_name ILIKE :s OR patient.last_name ILIKE :s OR patient.patient_code ILIKE :s OR doctor.name ILIKE :s)',
+        { s: `%${search}%` },
+      );
+    }
+
+    const [data, total] = await qb
+      .orderBy('plan.created_at', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return { data, total, page, limit };
   }
 
-  async findByPatient(patientId: string): Promise<TreatmentPlan[]> {
-    return this.plansRepo.find({
-      where: { patient_id: patientId },
-      relations: ['doctor', 'plan_services'],
-      order: { created_at: 'DESC' },
-    });
+  async findByPatient(patientId: string, page = 1, limit = 10) {
+    const [data, total] = await this.plansRepo
+      .createQueryBuilder('plan')
+      .leftJoinAndSelect('plan.doctor', 'doctor')
+      .leftJoinAndSelect('plan.plan_services', 'plan_services')
+      .where('plan.patient_id = :patientId', { patientId })
+      .orderBy('plan.created_at', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return { data, total, page, limit };
   }
 
   async findOne(id: string): Promise<TreatmentPlan> {
