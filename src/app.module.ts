@@ -14,9 +14,7 @@ import { WaitlistModule } from './modules/waitlist/waitlist.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-
     DatabaseModule,
-
     AuthModule,
     UsersModule,
     PatientsModule,
