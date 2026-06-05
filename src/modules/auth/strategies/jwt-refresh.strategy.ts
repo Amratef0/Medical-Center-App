@@ -9,10 +9,7 @@ import { User } from '../../users/user.entity';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
-export class JwtRefreshStrategy extends PassportStrategy(
-  Strategy,
-  'jwt-refresh',
-) {
+export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
   constructor(
     private config: ConfigService,
     @InjectRepository(User)
@@ -34,10 +31,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
     });
     if (!user || !user.refresh_token_hash) throw new UnauthorizedException();
 
-    const tokenMatches = await bcrypt.compare(
-      refreshToken,
-      user.refresh_token_hash,
-    );
+    const tokenMatches = await bcrypt.compare(refreshToken, user.refresh_token_hash);
     if (!tokenMatches) throw new UnauthorizedException();
 
     return user;

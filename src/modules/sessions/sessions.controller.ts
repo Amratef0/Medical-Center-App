@@ -1,0 +1,88 @@
+import { Controller, Get, Post, Put, Delete, Body, Param, Query,UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { SessionsService } from './sessions.service';
+import { CreateSessionDto, UpdateSessionDto, CreateAttendanceDto } from './dto/session.dto';
+import { JwtAccessGuard } from '../../common/guards/jwt.guards';
+import { RolesGuard, Roles } from '../../common/guards/roles.guard';
+import { UserRole } from '../users/user.entity';
+
+@ApiTags('Sessions')
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAccessGuard, RolesGuard)
+@Controller('sessions')
+export class SessionsController {
+  constructor(private readonly sessionsService: SessionsService) {}
+
+  @Post()
+  @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN, UserRole.OPERATIONS_MANAGER)
+  @ApiOperation({ summary: 'Book a new session' })
+  create(@Body() dto: CreateSessionDto) {
+    return this.sessionsService.create(dto);
+  }
+
+  @Get()
+@ApiOperation({ summary: 'Get all sessions' })
+@ApiQuery({ name: 'page', required: false, type: Number })
+@ApiQuery({ name: 'limit', required: false, type: Number })
+@ApiQuery({ name: 'search', required: false, type: String })
+findAll(
+  @Query('page') page = 1,
+  @Query('limit') limit = 10,
+  @Query('search') search?: string,
+) {
+  return this.sessionsService.findAll(+page, +limit, search);
+}
+
+@Get('patient/:patientId')
+@ApiOperation({ summary: 'Get all sessions for a patient' })
+@ApiQuery({ name: 'page', required: false, type: Number })
+@ApiQuery({ name: 'limit', required: false, type: Number })
+findByPatient(
+  @Param('patientId') patientId: string,
+  @Query('page') page = 1,
+  @Query('limit') limit = 10,
+) {
+  return this.sessionsService.findByPatient(patientId, +page, +limit);
+}
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get session by ID' })
+  findOne(@Param('id') id: string) {
+    return this.sessionsService.findOne(id);
+  }
+
+  @Put(':id')
+  @Roles(UserRole.RECEPTIONIST, UserRole.DOCTOR, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Update session (status, notes, etc.)' })
+  update(@Param('id') id: string, @Body() dto: UpdateSessionDto) {
+    return this.sessionsService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Delete session (Admin only)' })
+  remove(@Param('id') id: string) {
+    return this.sessionsService.remove(id);
+  }
+}
+
+@ApiTags('Attendance')
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAccessGuard, RolesGuard)
+@Controller('sessions/:sessionId/attendance')
+export class AttendanceController {
+  constructor(private readonly sessionsService: SessionsService) {}
+
+  @Post()
+  @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Mark attendance for a session' })
+  mark(@Param('sessionId') sessionId: string, @Body() dto: CreateAttendanceDto) {
+    return this.sessionsService.markAttendance(sessionId, dto);
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Get attendance record for a session' })
+  get(@Param('sessionId') sessionId: string) {
+    return this.sessionsService.getAttendance(sessionId);
+  }
+}

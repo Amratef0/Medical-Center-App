@@ -25,10 +25,7 @@ export class AuthService {
     if (!user || !user.is_active)
       throw new UnauthorizedException('Invalid credentials');
 
-    const passwordMatch = await bcrypt.compare(
-      dto.password,
-      user.password_hash,
-    );
+    const passwordMatch = await bcrypt.compare(dto.password, user.password_hash);
     if (!passwordMatch) throw new UnauthorizedException('Invalid credentials');
 
     const tokens = await this.generateTokens(user);
@@ -43,7 +40,8 @@ export class AuthService {
   }
 
   async refreshTokens(user: User) {
-    if (!user.refresh_token_hash) throw new ForbiddenException('Access denied');
+    if (!user.refresh_token_hash)
+      throw new ForbiddenException('Access denied');
 
     const tokens = await this.generateTokens(user);
     await this.updateRefreshToken(user.id, tokens.refresh_token);

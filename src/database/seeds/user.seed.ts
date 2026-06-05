@@ -31,18 +31,6 @@ export async function seedUsers(dataSource: DataSource) {
       password: 'password123',
       role: 'FINANCE',
     },
-    {
-      name: 'Operations Manager',
-      email: 'ops@mcsos.com',
-      password: 'password123',
-      role: 'OPERATIONS_MANAGER',
-    },
-    {
-      name: 'Customer Support',
-      email: 'support@mcsos.com',
-      password: 'password123',
-      role: 'CUSTOMER_SUPPORT',
-    },
   ];
 
   for (const userData of users) {

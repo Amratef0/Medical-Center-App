@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
 import {
   IsEmail,
   IsEnum,
@@ -27,7 +28,7 @@ export class CreateUserDto {
   role: UserRole;
 }
 
-export class UpdateUserDto extends PartialType(CreateUserDto) { }
+export class UpdateUserDto extends PartialType(CreateUserDto) {}
 
 export class UserResponseDto {
   @ApiProperty()
