@@ -36,6 +36,13 @@ async function bootstrap() {
     .addTag('Sessions', 'Session management')
     .addTag('Attendance', 'Session attendance')
     .addTag('Waitlist', 'Waitlist management')
+    .addTag('Services', 'Service catalog management')
+    .addTag('Packages', 'Package management')
+    .addTag('Patient Packages', 'Patient package assignment & tracking')
+    .addTag('Scheduling', 'Scheduling engine & slot management')
+    .addTag('Finance', 'Payments, discounts & invoices')
+    .addTag('Follow-ups', 'Follow-up tasks & WhatsApp automation')
+    .addTag('Reporting', 'Reports & analytics')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
