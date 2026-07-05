@@ -1,0 +1,464 @@
+[
+  {
+    "name": "أحمد جميل رشوان ناصف",
+    "specialization": "علاج طبيعي أطفال",
+    "phone": "",
+    "notes": "",
+    "source": "word_document"
+  },
+  {
+    "name": "أحمد جمعة عمر جعفر محمد",
+    "specialization": "علاج طبيعي أعصاب",
+    "phone": "01105210919",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "أحمد عبدالحكيم بدوي",
+    "specialization": "علاج طبيعي أطفال",
+    "phone": "01030734101",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "أمال خلف أحمد سليمان",
+    "specialization": "تخاطب",
+    "phone": "01023352766",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "سلوي محمود بسطاوي محمود",
+    "specialization": "تنمية مهارات",
+    "phone": "01015257188",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "سوسن إبراهيم الدسوقي",
+    "specialization": "علاج مائي",
+    "phone": "01023544151",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "عبدالله محمود سلام",
+    "specialization": "علاج طبيعي أعصاب",
+    "phone": "01201872741",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "عمرو عبدالمنعم محمود الخربتاوي",
+    "specialization": "علاج مائي",
+    "phone": "01099216885",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "محمود طلعت السيد الصغير",
+    "specialization": "علاج طبيعي أطفال",
+    "phone": "01155920424",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "هاجر أحمد رجب",
+    "specialization": "علاج مائي",
+    "phone": "01102621321",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "هيثم محمدي حسين",
+    "specialization": "علاج مائي",
+    "phone": "01096789162",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "آية الله فاضل",
+    "specialization": "تخاطب",
+    "phone": "01127088209",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "عبدالرحمن أحمد ناجي",
+    "specialization": "علاج طبيعي أعصاب",
+    "phone": "",
+    "notes": "",
+    "source": "word_document"
+  },
+  {
+    "name": "أحمد حسن عطية",
+    "specialization": "علاج طبيعي أعصاب",
+    "phone": "01012124183",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "إسراء عادل علي عبدالفضيل",
+    "specialization": "علاج طبيعي عظام",
+    "phone": "01021542872",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "إسراء عصام البدري كامل",
+    "specialization": "علاج طبيعي عظام",
+    "phone": "01558346568",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "عبدالرحمن حسين سيد عبدالهادي",
+    "specialization": "علاج طبيعي أعصاب",
+    "phone": "01093809520",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "عبدالله سمير محمدي خليل",
+    "specialization": "علاج طبيعي أعصاب",
+    "phone": "01159619966",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "محمد عبدالنبي محمد عطية",
+    "specialization": "علاج طبيعي عظام",
+    "phone": "01124788301",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "مني كمال حسن عبدالجواد سعد",
+    "specialization": "علاج طبيعي عظام",
+    "phone": "01206374712",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "نوران ناصر سلومة ابو العنين",
+    "specialization": "علاج طبيعي عظام",
+    "phone": "01028986014",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "وحيد شريف فؤاد إيراهيم",
+    "specialization": "علاج طبيعي أعصاب",
+    "phone": "01005467318",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "آية إيهاب ناجي عبدالستار",
+    "specialization": "علاج طبيعي عظام",
+    "phone": "01012230461",
+    "notes": "",
+    "source": "word_document + excel_doctors"
+  },
+  {
+    "name": "شريف محمد حسين القصاص",
+    "specialization": "علاج طبيعي أعصاب",
+    "phone": "",
+    "notes": "",
+    "source": "word_document"
+  },
+  {
+    "name": "عبدالرحمن فوزي",
+    "specialization": "علاج طبيعي أعصاب",
+    "phone": "",
+    "notes": "",
+    "source": "word_document"
+  },
+  {
+    "name": "السيد هاني السيد",
+    "specialization": "",
+    "phone": "01223490212",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "إسلام أحمد محمد إسماعيل",
+    "specialization": "",
+    "phone": "01155750424",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "إيمان محمود عزالدين مصطفي",
+    "specialization": "",
+    "phone": "01112822064",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "أحمد إيهاب أحمد صلاح",
+    "specialization": "",
+    "phone": "01070609188 / 01227939742",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "أحمد جمعة أحمد محمد بكير",
+    "specialization": "",
+    "phone": "01093515513",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "أحمد سامي السيد",
+    "specialization": "",
+    "phone": "01000616837",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "أحمد سامي عبدالنبي",
+    "specialization": "",
+    "phone": "01090869086",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "أحمد صلاح عبده المتبولي",
+    "specialization": "",
+    "phone": "01068874202",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "أحمد صلاح محمد رشاد السيد",
+    "specialization": "",
+    "phone": "01068428937",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "أحمد عبدالباسط عبدالله عبدالرحمن",
+    "specialization": "",
+    "phone": "01208880176",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "أحمد عبدالتواب أبو سعدة",
+    "specialization": "",
+    "phone": "01225281629",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "أحمد عبدالله حسين محمد عطية",
+    "specialization": "",
+    "phone": "01212624510",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "أحمد محمد أحمد قطب",
+    "specialization": "",
+    "phone": "01012671189",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "أحمد محمد محمد فايد",
+    "specialization": "",
+    "phone": "01201734935 / 01020148138",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "أحمد مسلم سليم محمد",
+    "specialization": "",
+    "phone": "01098840558",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "بيشوي أيمن أديب حبيب",
+    "specialization": "",
+    "phone": "01224847618",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "رضا شحاتة نجيب",
+    "specialization": "",
+    "phone": "01207479483",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "سارة حسام عطية",
+    "specialization": "",
+    "phone": "01033019865",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "عبدالرحمن حمادة مندراوي",
+    "specialization": "",
+    "phone": "01141767305",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "عبدالرحمن محمد علي عبدالجواد",
+    "specialization": "",
+    "phone": "01115626045",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "عبدالله السيد محمد",
+    "specialization": "",
+    "phone": "01096902183",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "غنية عادل عبداللطيف حسين",
+    "specialization": "",
+    "phone": "01028548601",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "كيرلس سعد زكريا لمعي",
+    "specialization": "",
+    "phone": "01556615085",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "محمد الفجري محمد محمود",
+    "specialization": "",
+    "phone": "01115044705",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "محمد أحمد عبدالمطلب محمد أبو شادي",
+    "specialization": "",
+    "phone": "01283459076",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "محمد أحمد محمد بحيري",
+    "specialization": "",
+    "phone": "01068472244",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "محمد أسامة محمد",
+    "specialization": "",
+    "phone": "01028305704",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "محمد أشرف محمد عزب",
+    "specialization": "",
+    "phone": "01092182812",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "محمد أشرف مسلم سرور",
+    "specialization": "",
+    "phone": "01272239783",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "محمد حمدي زكي الغرباوي",
+    "specialization": "",
+    "phone": "01119949337",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "محمد شريف الأنصاري سيد",
+    "specialization": "",
+    "phone": "01140516899",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "جني مصطفي",
+    "specialization": "",
+    "phone": "01204886489",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "مريم محمد السيد الشناوي",
+    "specialization": "",
+    "phone": "01027266338",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "مصطفي ماهر عبدالعليم",
+    "specialization": "",
+    "phone": "01112912704",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "منار أحمد علي",
+    "specialization": "",
+    "phone": "01154914005",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "مها محمود علي رضوان",
+    "specialization": "",
+    "phone": "01155876289",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "مينا صبحي شحاتة إبراهيم",
+    "specialization": "",
+    "phone": "01210460249",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "هاجر خالد سمير موسي",
+    "specialization": "",
+    "phone": "01030197000",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "هايدي سعيد أبوالسعود عبدالقادر",
+    "specialization": "",
+    "phone": "01013312325",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "يوسف حسن سعد محمد",
+    "specialization": "",
+    "phone": "01158325665",
+    "notes": "",
+    "source": "excel_doctors"
+  },
+  {
+    "name": "وليد أحمد محمد سيد",
+    "specialization": "",
+    "phone": "01025037585",
+    "notes": "",
+    "source": "excel_doctors"
+  }
+]
