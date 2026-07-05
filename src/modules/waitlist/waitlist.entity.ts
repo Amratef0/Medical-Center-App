@@ -10,11 +10,25 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Patient } from '../patients/patient.entity';
 import { Doctor } from '../doctors/doctor.entity';
 
+export enum WaitlistStatus {
+  WAITING = 'WAITING',
+  ASSIGNED = 'ASSIGNED',
+  CANCELLED = 'CANCELLED',
+}
+
 @Entity('waitlist')
 export class Waitlist {
   @ApiProperty()
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @ApiProperty({ enum: WaitlistStatus })
+  @Column({
+    type: 'enum',
+    enum: WaitlistStatus,
+    default: WaitlistStatus.WAITING,
+  })
+  status: WaitlistStatus;
 
   @ManyToOne(() => Patient, (p) => p.waitlist_entries, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'patient_id' })

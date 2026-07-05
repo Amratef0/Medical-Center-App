@@ -13,6 +13,7 @@ import { Patient } from '../patients/patient.entity';
 import { Doctor } from '../doctors/doctor.entity';
 import { TreatmentPlan } from '../treatment-plans/treatment-plan.entity';
 import { Attendance } from './attendance.entity';
+import { Room } from '../rooms/room.entity';
 
 export enum SessionStatus {
   SCHEDULED = 'SCHEDULED',
@@ -25,6 +26,12 @@ export enum SessionType {
   ASSESSMENT = 'ASSESSMENT',
   TREATMENT = 'TREATMENT',
   FOLLOWUP = 'FOLLOWUP',
+}
+
+export enum SessionConfirmStatus {
+  PENDING = 'PENDING',
+  CONFIRMED = 'CONFIRMED',
+  DECLINED = 'DECLINED',
 }
 
 @Entity('sessions')
@@ -103,6 +110,30 @@ export class Session {
 
   @OneToOne(() => Attendance, (a) => a.session)
   attendance: Attendance;
+
+  @ManyToOne(() => Room, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'room_id' })
+  room: Room;
+
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
+  room_id: string;
+
+  @ApiProperty({ enum: SessionConfirmStatus })
+  @Column({
+    type: 'enum',
+    enum: SessionConfirmStatus,
+    default: SessionConfirmStatus.PENDING,
+  })
+  confirm_status: SessionConfirmStatus;
+
+  @ApiProperty({ required: false })
+  @Column({ type: 'timestamptz', nullable: true })
+  start_time: Date;
+
+  @ApiProperty({ required: false })
+  @Column({ type: 'timestamptz', nullable: true })
+  end_time: Date;
 
   @ApiProperty()
   @CreateDateColumn()

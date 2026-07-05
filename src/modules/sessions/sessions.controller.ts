@@ -5,6 +5,7 @@ import { CreateSessionDto, UpdateSessionDto, CreateAttendanceDto } from './dto/s
 import { JwtAccessGuard } from '../../common/guards/jwt.guards';
 import { RolesGuard, Roles } from '../../common/guards/roles.guard';
 import { UserRole } from '../users/user.entity';
+import { SessionConfirmStatus } from './session.entity';
 
 @ApiTags('Sessions')
 @ApiBearerAuth('access-token')
@@ -49,6 +50,36 @@ findByPatient(
   @ApiOperation({ summary: 'Get session by ID' })
   findOne(@Param('id') id: string) {
     return this.sessionsService.findOne(id);
+  }
+
+  @Get('date/:date')
+  @ApiOperation({ summary: 'Get all sessions for a specific date (YYYY-MM-DD)' })
+  findByDate(@Param('date') date: string) {
+    return this.sessionsService.findByDate(date);
+  }
+
+  @Put(':id/confirm')
+  @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN, UserRole.OPERATIONS_MANAGER)
+  @ApiOperation({ summary: 'Confirm or decline a session' })
+  confirm(
+    @Param('id') id: string,
+    @Body('confirm_status') confirmStatus: SessionConfirmStatus,
+  ) {
+    return this.sessionsService.confirm(id, confirmStatus);
+  }
+
+  @Post(':id/start')
+  @Roles(UserRole.DOCTOR, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Mark session as started' })
+  startSession(@Param('id') id: string) {
+    return this.sessionsService.startSession(id);
+  }
+
+  @Post(':id/end')
+  @Roles(UserRole.DOCTOR, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Mark session as ended' })
+  endSession(@Param('id') id: string) {
+    return this.sessionsService.endSession(id);
   }
 
   @Put(':id')

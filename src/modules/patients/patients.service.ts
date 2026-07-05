@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Patient } from './patient.entity';
+import { Patient, PatientStatus } from './patient.entity';
 import { MedicalHistory } from './medical-history.entity';
 import { CreatePatientDto, UpdatePatientDto } from './dto/patient.dto';
 import { CreateMedicalHistoryDto, UpdateMedicalHistoryDto } from './dto/medical-history.dto';
@@ -93,5 +93,15 @@ export class PatientsService {
     const history = await this.getMedicalHistory(patientId);
     Object.assign(history, dto);
     return this.medicalHistoryRepo.save(history);
+  }
+
+  async completeAssessment(id: string): Promise<any> {
+    const patient = await this.findOne(id);
+    patient.status = PatientStatus.ASSESSMENT_COMPLETED;
+    await this.patientsRepo.save(patient);
+    return {
+      message: 'Assessment completed successfully',
+      patient,
+    };
   }
 }

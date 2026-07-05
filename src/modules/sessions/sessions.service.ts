@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Session } from './session.entity';
+import { Repository, Between } from 'typeorm';
+import { Session, SessionConfirmStatus } from './session.entity';
 import { Attendance } from './attendance.entity';
 import { CreateSessionDto, UpdateSessionDto, CreateAttendanceDto } from './dto/session.dto';
 
@@ -59,10 +59,47 @@ export class SessionsService {
   async findOne(id: string): Promise<Session> {
     const session = await this.sessionsRepo.findOne({
       where: { id },
-      relations: ['patient', 'doctor', 'treatment_plan', 'attendance'],
+      relations: ['patient', 'doctor', 'treatment_plan', 'attendance', 'room'],
     });
     if (!session) throw new NotFoundException('Session not found');
     return session;
+  }
+
+  async findByDate(dateStr: string): Promise<Session[]> {
+    const date = new Date(dateStr);
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return this.sessionsRepo.find({
+      where: {
+        session_date: Between(startOfDay, endOfDay) as any,
+      },
+      relations: ['patient', 'doctor', 'attendance', 'room'],
+      order: {
+        session_date: 'ASC',
+      },
+    });
+  }
+
+  async confirm(id: string, status: SessionConfirmStatus): Promise<Session> {
+    const session = await this.findOne(id);
+    session.confirm_status = status;
+    return this.sessionsRepo.save(session);
+  }
+
+  async startSession(id: string): Promise<Session> {
+    const session = await this.findOne(id);
+    session.start_time = new Date();
+    session.status = 'ATTENDED' as any; // Auto set to attended when started
+    return this.sessionsRepo.save(session);
+  }
+
+  async endSession(id: string): Promise<Session> {
+    const session = await this.findOne(id);
+    session.end_time = new Date();
+    return this.sessionsRepo.save(session);
   }
 
   async update(id: string, dto: UpdateSessionDto): Promise<Session> {

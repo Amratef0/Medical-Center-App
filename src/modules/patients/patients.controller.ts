@@ -50,6 +50,13 @@ findAll(
     return this.patientsService.update(id, dto);
   }
 
+  @Put(':id/complete-assessment')
+  @Roles(UserRole.DOCTOR, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Mark patient assessment as completed' })
+  completeAssessment(@Param('id') id: string) {
+    return this.patientsService.completeAssessment(id);
+  }
+
   @Delete(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Delete patient (Admin only)' })

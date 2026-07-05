@@ -49,6 +49,17 @@ findOne(@Param('id') id: string) {
     return this.waitlistService.update(id, dto);
   }
 
+  @Post(':id/assign')
+  @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Assign slot to waitlist entry and convert to session' })
+  assign(
+    @Param('id') id: string,
+    @Body('slot_id') slotId: string,
+    @Body('session_date') sessionDate: string,
+  ) {
+    return this.waitlistService.assignFromWaitlist(id, slotId, sessionDate);
+  }
+
   @Delete(':id')
   @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN)
   @ApiOperation({ summary: 'Remove from waitlist' })

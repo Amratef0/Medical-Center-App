@@ -18,6 +18,8 @@ import { DoctorsModule } from './modules/doctors/doctors.module';
 import { TreatmentPlansModule } from './modules/treatment-plans/treatment-plans.module';
 import { SessionsModule } from './modules/sessions/sessions.module';
 import { WaitlistModule } from './modules/waitlist/waitlist.module';
+import { RoomsModule } from './modules/rooms/rooms.module';
+import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { WaitlistModule } from './modules/waitlist/waitlist.module';
     // Shared
     AuthModule,
     UsersModule,
+    RoomsModule,
+    WhatsappModule,
     // Ebrahim-dev
     ServicesModule,
     PackagesModule,

@@ -3,9 +3,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { WaitlistService } from './waitlist.service';
 import { WaitlistController } from './waitlist.controller';
 import { Waitlist } from './waitlist.entity';
+import { SessionsModule } from '../sessions/sessions.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Waitlist])],
+  imports: [
+    TypeOrmModule.forFeature([Waitlist]),
+    SessionsModule,
+  ],
   controllers: [WaitlistController],
   providers: [WaitlistService],
   exports: [WaitlistService],

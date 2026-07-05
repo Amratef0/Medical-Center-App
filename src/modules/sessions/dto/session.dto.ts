@@ -7,7 +7,7 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
-import { SessionStatus, SessionType } from '../session.entity';
+import { SessionStatus, SessionType, SessionConfirmStatus } from '../session.entity';
 import { AttendanceStatus } from '../attendance.entity';
 
 export class CreateSessionDto {
@@ -52,6 +52,11 @@ export class CreateSessionDto {
   @IsOptional()
   @IsString()
   reception_notes?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  room_id?: string;
 }
 
 export class UpdateSessionDto extends PartialType(CreateSessionDto) {
@@ -74,6 +79,21 @@ export class UpdateSessionDto extends PartialType(CreateSessionDto) {
   @IsOptional()
   @IsBoolean()
   is_deducted?: boolean;
+
+  @ApiPropertyOptional({ enum: SessionConfirmStatus })
+  @IsOptional()
+  @IsEnum(SessionConfirmStatus)
+  confirm_status?: SessionConfirmStatus;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  start_time?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  end_time?: string;
 }
 
 export class CreateAttendanceDto {
