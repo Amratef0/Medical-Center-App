@@ -221,7 +221,7 @@ export class PackagesService {
           .where('pp.patient_id = session.patient_id')
           .andWhere('pp.status = :activeStatus', { activeStatus: PatientPackageStatus.ACTIVE })
           .getQuery();
-        return 'NOT EXISTS ' + subQuery;
+        return 'NOT EXISTS (' + subQuery + ')';
       })
       .orderBy('session.session_date', 'DESC');
 
