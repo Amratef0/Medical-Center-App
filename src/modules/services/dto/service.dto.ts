@@ -18,6 +18,11 @@ export class CreateServiceDto {
   @IsNumber()
   @Min(0)
   price?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  is_active?: boolean;
 }
 
 export class UpdateServiceDto extends PartialType(CreateServiceDto) {
