@@ -200,32 +200,37 @@ export class PackagesService {
   }
 
   async getCompletedFirstSessions(dateString?: string): Promise<Session[]> {
-    // Finds sessions that are ATTENDED on a given date (or today), where the patient
-    // doesn't already have an active package.
     const targetDate = dateString ? new Date(dateString) : new Date();
     targetDate.setHours(0, 0, 0, 0);
     const nextDate = new Date(targetDate);
     nextDate.setDate(nextDate.getDate() + 1);
 
-    const qb = this.sessionsRepo.createQueryBuilder('session')
+    // Step 1: Get all ATTENDED sessions for the day
+    const sessions = await this.sessionsRepo
+      .createQueryBuilder('session')
       .leftJoinAndSelect('session.patient', 'patient')
       .leftJoinAndSelect('session.doctor', 'doctor')
       .where('session.status = :status', { status: 'ATTENDED' })
       .andWhere('session.session_date >= :targetDate', { targetDate })
       .andWhere('session.session_date < :nextDate', { nextDate })
-      .andWhere((qb) => {
-        const subQuery = qb
-          .subQuery()
-          .select('pp.id')
-          .from(PatientPackage, 'pp')
-          .where('pp.patient_id = session.patient_id')
-          .andWhere('pp.status = :activeStatus')
-          .getQuery();
-        return 'NOT EXISTS (' + subQuery + ')';
-      })
-      .setParameter('activeStatus', PatientPackageStatus.ACTIVE)
-      .orderBy('session.session_date', 'DESC');
+      .orderBy('session.session_date', 'DESC')
+      .getMany();
 
-    return qb.getMany();
+    if (sessions.length === 0) return [];
+
+    // Step 2: Get patients who already have an active package
+    const patientIds = sessions.map((s) => s.patient_id);
+
+    const activePackages = await this.patientPackagesRepo
+      .createQueryBuilder('pp')
+      .select('pp.patient_id')
+      .where('pp.patient_id IN (:...patientIds)', { patientIds })
+      .andWhere('pp.status = :activeStatus', { activeStatus: PatientPackageStatus.ACTIVE })
+      .getRawMany();
+
+    const patientsWithPackage = new Set(activePackages.map((p) => p.pp_patient_id));
+
+    // Step 3: Filter out patients who already have an active package
+    return sessions.filter((s) => !patientsWithPackage.has(s.patient_id));
   }
 }
