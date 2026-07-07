@@ -219,10 +219,11 @@ export class PackagesService {
           .select('pp.id')
           .from(PatientPackage, 'pp')
           .where('pp.patient_id = session.patient_id')
-          .andWhere('pp.status = :activeStatus', { activeStatus: PatientPackageStatus.ACTIVE })
+          .andWhere('pp.status = :activeStatus')
           .getQuery();
         return 'NOT EXISTS (' + subQuery + ')';
       })
+      .setParameter('activeStatus', PatientPackageStatus.ACTIVE)
       .orderBy('session.session_date', 'DESC');
 
     return qb.getMany();
