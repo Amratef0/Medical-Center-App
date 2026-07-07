@@ -12,16 +12,6 @@ export class CreateServiceDto {
   @IsString()
   name: string;
 
-  @ApiPropertyOptional({ example: 'Standard physiotherapy treatment session' })
-  @IsOptional()
-  @IsString()
-  description?: string;
-
-  @ApiPropertyOptional({ example: 30, description: 'Duration in minutes' })
-  @IsOptional()
-  @IsNumber()
-  @Min(5)
-  duration_minutes?: number;
 
   @ApiPropertyOptional({ example: 150.00, description: 'Base price' })
   @IsOptional()

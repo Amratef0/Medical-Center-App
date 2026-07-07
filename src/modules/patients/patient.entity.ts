@@ -62,6 +62,14 @@ export class Patient {
 
   @ApiProperty({ required: false })
   @Column({ nullable: true })
+  referral_source: string;
+
+  @ApiProperty({ required: false })
+  @Column({ type: 'text', nullable: true })
+  national_id_photo: string;
+
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
   emergency_contact: string;
 
   @ApiProperty({ required: false })

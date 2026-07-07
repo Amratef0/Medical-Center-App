@@ -17,13 +17,6 @@ export class Service {
   @Column()
   name: string;
 
-  @ApiProperty({ required: false })
-  @Column({ type: 'text', nullable: true })
-  description: string;
-
-  @ApiProperty({ description: 'Duration in minutes for this service' })
-  @Column({ name: 'duration_minutes', default: 30 })
-  duration_minutes: number;
 
   @ApiProperty({ description: 'Base price for this service', required: false })
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
