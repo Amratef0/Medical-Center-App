@@ -14,7 +14,9 @@ import {
   AssignPackageDto,
 } from './dto/package.dto';
 import { User } from '../users/user.entity';
-import { Session } from '../sessions/session.entity';
+import { Session, SessionStatus, SessionType } from '../sessions/session.entity';
+
+import { SchedulingService } from '../scheduling/scheduling.service';
 
 @Injectable()
 export class PackagesService {
@@ -27,6 +29,7 @@ export class PackagesService {
     private patientPackagesRepo: Repository<PatientPackage>,
     @InjectRepository(Session)
     private sessionsRepo: Repository<Session>,
+    private schedulingService: SchedulingService,
   ) {}
 
   // ──────────── Package CRUD ────────────
@@ -148,7 +151,59 @@ export class PackagesService {
       patientPackage.final_price = pkg.price;
     }
 
-    return this.patientPackagesRepo.save(patientPackage);
+    const savedPP = await this.patientPackagesRepo.save(patientPackage);
+
+    if (dto.auto_book && pkg.package_services?.length > 0) {
+      // Find the doctor from the last session for this patient.
+      const lastSession = await this.sessionsRepo.findOne({
+        where: { patient_id: dto.patient_id, status: 'ATTENDED' as any },
+        order: { session_date: 'DESC' },
+      });
+
+      if (lastSession && lastSession.doctor_id) {
+        const doctorId = lastSession.doctor_id;
+         
+        // For each service in the package, try to auto-book
+        for (const ps of pkg.package_services) {
+          let neededSessions = ps.session_count;
+          if (neededSessions <= 0) continue;
+            
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          tomorrow.setHours(0, 0, 0, 0);
+
+          const availableSlots = await this.schedulingService.findAvailableSlots({
+            doctor_id: doctorId,
+            service_id: ps.service_id,
+            from: tomorrow.toISOString(),
+          });
+
+          for (const slot of availableSlots) {
+            if (neededSessions <= 0) break;
+                
+            // Book the slot
+            await this.schedulingService.bookSlot(slot.id);
+                
+            // Create a session
+            const session = this.sessionsRepo.create({
+              patient_id: dto.patient_id,
+              doctor_id: doctorId,
+              service_id: ps.service_id,
+              slot_id: slot.id,
+              patient_package_id: savedPP.id,
+              session_type: SessionType.PACKAGE,
+              session_date: slot.start_time,
+              status: SessionStatus.SCHEDULED,
+              is_deducted: false,
+            });
+            await this.sessionsRepo.save(session);
+            neededSessions--;
+          }
+        }
+      }
+    }
+
+    return savedPP;
   }
 
   async getPatientPackages(patientId: string): Promise<PatientPackage[]> {

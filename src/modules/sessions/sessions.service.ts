@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
-import { Session, SessionConfirmStatus } from './session.entity';
+import { Session, SessionConfirmStatus, SessionStatus } from './session.entity';
 import { Attendance } from './attendance.entity';
 import { CreateSessionDto, UpdateSessionDto, CreateAttendanceDto } from './dto/session.dto';
 
@@ -92,13 +92,13 @@ export class SessionsService {
   async startSession(id: string): Promise<Session> {
     const session = await this.findOne(id);
     session.start_time = new Date();
-    session.status = 'ATTENDED' as any; // Auto set to attended when started
     return this.sessionsRepo.save(session);
   }
 
   async endSession(id: string): Promise<Session> {
     const session = await this.findOne(id);
     session.end_time = new Date();
+    session.status = SessionStatus.ATTENDED; // Set to attended when ended
     return this.sessionsRepo.save(session);
   }
 

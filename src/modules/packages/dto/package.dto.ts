@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsNumber,
   IsOptional,
@@ -86,4 +87,9 @@ export class AssignPackageDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({ description: 'Whether to automatically book sessions' })
+  @IsOptional()
+  @IsBoolean()
+  auto_book?: boolean;
 }
