@@ -62,4 +62,20 @@ export class PatientPackage {
   @ApiProperty()
   @UpdateDateColumn()
   updated_at: Date;
+
+  @ApiProperty({ description: 'Type of discount applied', required: false, enum: ['fixed', 'percentage'] })
+  @Column({ type: 'enum', enum: ['fixed', 'percentage'], nullable: true })
+  discount_type?: 'fixed' | 'percentage';
+
+  @ApiProperty({ description: 'Discount amount', required: false })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  discount_amount?: number;
+
+  @ApiProperty({ description: 'Final price after discount', required: false })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  final_price?: number;
+
+  @ApiProperty({ description: 'Additional notes', required: false })
+  @Column({ type: 'text', nullable: true })
+  notes?: string;
 }

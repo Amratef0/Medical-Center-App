@@ -70,4 +70,20 @@ export class AssignPackageDto {
   @ApiProperty({ description: 'Package ID to assign' })
   @IsUUID()
   package_id: string;
+
+  @ApiPropertyOptional({ description: 'Type of discount', enum: ['fixed', 'percentage'] })
+  @IsOptional()
+  @IsEnum(['fixed', 'percentage'])
+  discount_type?: 'fixed' | 'percentage';
+
+  @ApiPropertyOptional({ description: 'Discount amount' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  discount_amount?: number;
+
+  @ApiPropertyOptional({ description: 'Additional notes' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }

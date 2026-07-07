@@ -14,6 +14,7 @@ import {
   AssignPackageDto,
 } from './dto/package.dto';
 import { User } from '../users/user.entity';
+import { Session } from '../sessions/session.entity';
 
 @Injectable()
 export class PackagesService {
@@ -24,6 +25,8 @@ export class PackagesService {
     private packageServicesRepo: Repository<PackageService>,
     @InjectRepository(PatientPackage)
     private patientPackagesRepo: Repository<PatientPackage>,
+    @InjectRepository(Session)
+    private sessionsRepo: Repository<Session>,
   ) {}
 
   // ──────────── Package CRUD ────────────
@@ -126,7 +129,24 @@ export class PackagesService {
       status: PatientPackageStatus.ACTIVE,
       start_date: startDate,
       end_date: endDate,
+      discount_type: dto.discount_type,
+      discount_amount: dto.discount_amount,
+      notes: dto.notes,
     });
+
+    if (pkg.price != null && dto.discount_amount != null && dto.discount_amount > 0) {
+      if (dto.discount_type === 'percentage') {
+        patientPackage.final_price = pkg.price - (pkg.price * (dto.discount_amount / 100));
+      } else {
+        // fixed
+        patientPackage.final_price = pkg.price - dto.discount_amount;
+      }
+      if (patientPackage.final_price < 0) {
+         patientPackage.final_price = 0;
+      }
+    } else if (pkg.price != null) {
+      patientPackage.final_price = pkg.price;
+    }
 
     return this.patientPackagesRepo.save(patientPackage);
   }
@@ -177,5 +197,34 @@ export class PackagesService {
     }
 
     return this.patientPackagesRepo.save(pp);
+  }
+
+  async getCompletedFirstSessions(dateString?: string): Promise<Session[]> {
+    // Finds sessions that are ATTENDED on a given date (or today), where the patient
+    // doesn't already have an active package.
+    const targetDate = dateString ? new Date(dateString) : new Date();
+    targetDate.setHours(0, 0, 0, 0);
+    const nextDate = new Date(targetDate);
+    nextDate.setDate(nextDate.getDate() + 1);
+
+    const qb = this.sessionsRepo.createQueryBuilder('session')
+      .leftJoinAndSelect('session.patient', 'patient')
+      .leftJoinAndSelect('session.doctor', 'doctor')
+      .where('session.status = :status', { status: 'ATTENDED' })
+      .andWhere('session.session_date >= :targetDate', { targetDate })
+      .andWhere('session.session_date < :nextDate', { nextDate })
+      .andWhere((qb) => {
+        const subQuery = qb
+          .subQuery()
+          .select('pp.id')
+          .from(PatientPackage, 'pp')
+          .where('pp.patient_id = session.patient_id')
+          .andWhere('pp.status = :activeStatus', { activeStatus: PatientPackageStatus.ACTIVE })
+          .getQuery();
+        return 'NOT EXISTS ' + subQuery;
+      })
+      .orderBy('session.session_date', 'DESC');
+
+    return qb.getMany();
   }
 }

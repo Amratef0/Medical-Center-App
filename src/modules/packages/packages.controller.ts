@@ -61,6 +61,13 @@ export class PackagesController {
     return this.packagesService.remove(id);
   }
 
+  @Get('assign/completed-sessions')
+  @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN, UserRole.DOCTOR)
+  @ApiOperation({ summary: 'Get sessions completed today where the patient does not have an active package' })
+  getCompletedSessions() {
+    return this.packagesService.getCompletedFirstSessions();
+  }
+
   @Post('assign')
   @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN)
   @ApiOperation({ summary: 'Assign a package to a patient' })

@@ -8,10 +8,11 @@ import {
 import { Package } from './package.entity';
 import { PackageService } from './package-service.entity';
 import { PatientPackage } from './patient-package.entity';
+import { Session } from '../sessions/session.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Package, PackageService, PatientPackage]),
+    TypeOrmModule.forFeature([Package, PackageService, PatientPackage, Session]),
   ],
   controllers: [PackagesController, PatientPackagesController],
   providers: [PackagesService],
