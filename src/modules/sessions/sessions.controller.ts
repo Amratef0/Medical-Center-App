@@ -21,17 +21,23 @@ export class SessionsController {
     return this.sessionsService.create(dto);
   }
 
-  @Get()
+@Get()
 @ApiOperation({ summary: 'Get all sessions' })
 @ApiQuery({ name: 'page', required: false, type: Number })
 @ApiQuery({ name: 'limit', required: false, type: Number })
 @ApiQuery({ name: 'search', required: false, type: String })
+@ApiQuery({ name: 'doctor_id', required: false, type: String })
+@ApiQuery({ name: 'from', required: false, type: String })
+@ApiQuery({ name: 'to', required: false, type: String })
 findAll(
   @Query('page') page = 1,
   @Query('limit') limit = 10,
   @Query('search') search?: string,
+  @Query('doctor_id') doctor_id?: string,
+  @Query('from') from?: string,
+  @Query('to') to?: string,
 ) {
-  return this.sessionsService.findAll(+page, +limit, search);
+  return this.sessionsService.findAll(+page, +limit, search, doctor_id, from, to);
 }
 
 @Get('patient/:patientId')

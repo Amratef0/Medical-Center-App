@@ -19,7 +19,7 @@ export class SessionsService {
     return this.sessionsRepo.save(session);
   }
 
-  async findAll(page = 1, limit = 10, search?: string) {
+  async findAll(page = 1, limit = 10, search?: string, doctor_id?: string, from?: string, to?: string) {
     const qb = this.sessionsRepo
       .createQueryBuilder('session')
       .leftJoinAndSelect('session.patient', 'patient')
@@ -27,10 +27,22 @@ export class SessionsService {
       .leftJoinAndSelect('session.attendance', 'attendance');
 
     if (search) {
-      qb.where(
+      qb.andWhere(
         '(patient.first_name ILIKE :s OR patient.last_name ILIKE :s OR patient.patient_code ILIKE :s OR doctor.name ILIKE :s)',
         { s: `%${search}%` },
       );
+    }
+
+    if (doctor_id) {
+      qb.andWhere('session.doctor_id = :doctorId', { doctorId: doctor_id });
+    }
+
+    if (from) {
+      qb.andWhere('session.session_date >= :from', { from: new Date(from) });
+    }
+
+    if (to) {
+      qb.andWhere('session.session_date <= :to', { to: new Date(to) });
     }
 
     const [data, total] = await qb
