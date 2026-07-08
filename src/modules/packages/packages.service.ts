@@ -219,7 +219,7 @@ export class PackagesService {
               service_id: ps.service_id,
               slot_id: slot.id,
               patient_package_id: savedPP.id,
-              session_type: SessionType.PACKAGE,
+              session_type: SessionType.TREATMENT,
               session_date: slot.start_time,
               status: SessionStatus.SCHEDULED,
               is_deducted: false,
