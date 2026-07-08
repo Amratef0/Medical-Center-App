@@ -17,6 +17,7 @@ import { User } from '../users/user.entity';
 import { Session, SessionStatus, SessionType } from '../sessions/session.entity';
 
 import { SchedulingService } from '../scheduling/scheduling.service';
+import { Doctor } from '../doctors/doctor.entity';
 
 @Injectable()
 export class PackagesService {
@@ -29,6 +30,8 @@ export class PackagesService {
     private patientPackagesRepo: Repository<PatientPackage>,
     @InjectRepository(Session)
     private sessionsRepo: Repository<Session>,
+    @InjectRepository(Doctor)
+    private doctorsRepo: Repository<Doctor>,
     private schedulingService: SchedulingService,
   ) {}
 
@@ -158,10 +161,12 @@ export class PackagesService {
       const lastSession = await this.sessionsRepo.findOne({
         where: { patient_id: dto.patient_id, status: 'ATTENDED' as any },
         order: { session_date: 'DESC' },
+        relations: ['doctor'],
       });
 
       if (lastSession && lastSession.doctor_id) {
-        const doctorId = lastSession.doctor_id;
+        let primaryDoctorId = lastSession.doctor_id;
+        const specialization = lastSession.doctor?.specialization;
          
         // For each service in the package, try to auto-book
         for (const ps of pkg.package_services) {
@@ -172,11 +177,34 @@ export class PackagesService {
           tomorrow.setDate(tomorrow.getDate() + 1);
           tomorrow.setHours(0, 0, 0, 0);
 
-          const availableSlots = await this.schedulingService.findAvailableSlots({
-            doctor_id: doctorId,
+          // Get slots for the primary doctor
+          let availableSlots = await this.schedulingService.findAvailableSlots({
+            doctor_id: primaryDoctorId,
             service_id: ps.service_id,
             from: tomorrow.toISOString(),
           });
+
+          // If we need more sessions but primary doctor has no slots, find other doctors in same specialization
+          if (availableSlots.length < neededSessions && specialization) {
+            const alternativeDoctors = await this.doctorsRepo.find({
+              where: { specialization: specialization, is_active: true }
+            });
+            for (const altDoc of alternativeDoctors) {
+               if (altDoc.id === primaryDoctorId) continue;
+               
+               const altSlots = await this.schedulingService.findAvailableSlots({
+                  doctor_id: altDoc.id,
+                  service_id: ps.service_id,
+                  from: tomorrow.toISOString(),
+               });
+               
+               availableSlots = availableSlots.concat(altSlots);
+               if (availableSlots.length >= neededSessions) break;
+            }
+            
+            // Sort by start_time so we book earliest possible slots
+            availableSlots.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+          }
 
           for (const slot of availableSlots) {
             if (neededSessions <= 0) break;
@@ -187,7 +215,7 @@ export class PackagesService {
             // Create a session
             const session = this.sessionsRepo.create({
               patient_id: dto.patient_id,
-              doctor_id: doctorId,
+              doctor_id: slot.doctor_id || primaryDoctorId,
               service_id: ps.service_id,
               slot_id: slot.id,
               patient_package_id: savedPP.id,

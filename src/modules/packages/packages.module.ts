@@ -10,10 +10,11 @@ import { PackageService } from './package-service.entity';
 import { PatientPackage } from './patient-package.entity';
 import { Session } from '../sessions/session.entity';
 import { SchedulingModule } from '../scheduling/scheduling.module';
+import { Doctor } from '../doctors/doctor.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Package, PackageService, PatientPackage, Session]),
+    TypeOrmModule.forFeature([Package, PackageService, PatientPackage, Session, Doctor]),
     SchedulingModule,
   ],
   controllers: [PackagesController, PatientPackagesController],
