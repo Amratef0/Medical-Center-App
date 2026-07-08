@@ -243,9 +243,45 @@ export class PackagesService {
               is_deducted: false,
             });
             await this.sessionsRepo.save(session);
-            
             bookedDates.add(dateString);
             neededSessions--;
+          }
+
+          // Fallback: If we still need sessions but ran out of slots, create manual sessions
+          if (neededSessions > 0) {
+             let lastDate = tomorrow;
+             if (availableSlots.length > 0) {
+                 const lastSlot = availableSlots[availableSlots.length - 1];
+                 lastDate = new Date(lastSlot.start_time);
+             }
+
+             while (neededSessions > 0) {
+                 lastDate.setDate(lastDate.getDate() + 1);
+                 const dateString = `${lastDate.getFullYear()}-${lastDate.getMonth()}-${lastDate.getDate()}`;
+                 
+                 // Ensure we don't book on a date we already booked
+                 if (bookedDates.has(dateString)) {
+                     continue;
+                 }
+
+                 const sessionDate = new Date(lastDate);
+                 sessionDate.setHours(10, 0, 0, 0); // Default to 10:00 AM
+
+                 const session = this.sessionsRepo.create({
+                   patient_id: dto.patient_id,
+                   doctor_id: primaryDoctorId,
+                   service_id: ps.service_id,
+                   patient_package_id: savedPP.id,
+                   session_type: SessionType.TREATMENT,
+                   session_date: sessionDate,
+                   status: SessionStatus.SCHEDULED,
+                   is_deducted: false,
+                 });
+                 await this.sessionsRepo.save(session);
+                 
+                 bookedDates.add(dateString);
+                 neededSessions--;
+             }
           }
         }
       }
