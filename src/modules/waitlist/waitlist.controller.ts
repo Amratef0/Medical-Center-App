@@ -56,8 +56,9 @@ findOne(@Param('id') id: string) {
     @Param('id') id: string,
     @Body('slot_id') slotId: string,
     @Body('session_date') sessionDate: string,
+    @Body('doctor_id') doctorId?: string,
   ) {
-    return this.waitlistService.assignFromWaitlist(id, slotId, sessionDate);
+    return this.waitlistService.assignFromWaitlist(id, slotId, sessionDate, doctorId);
   }
 
   @Delete(':id')

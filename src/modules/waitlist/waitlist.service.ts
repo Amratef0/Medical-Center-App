@@ -19,12 +19,12 @@ export class WaitlistService {
     return this.waitlistRepo.save(entry);
   }
 
-  async assignFromWaitlist(id: string, slotId: string, sessionDate: string): Promise<any> {
+  async assignFromWaitlist(id: string, slotId: string, sessionDate: string, doctorId?: string): Promise<any> {
     const entry = await this.findOne(id);
 
     const session = await this.sessionsService.create({
       patient_id: entry.patient_id,
-      doctor_id: entry.doctor_id || undefined,
+      doctor_id: doctorId || entry.doctor_id || undefined,
       service_id: entry.service_id || undefined,
       slot_id: slotId,
       session_type: SessionType.TREATMENT,
