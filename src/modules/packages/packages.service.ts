@@ -184,8 +184,17 @@ export class PackagesService {
             from: tomorrow.toISOString(),
           });
 
+          const getUniqueDaysCount = (slots: any[]) => {
+            const days = new Set<string>();
+            slots.forEach(s => {
+              const d = new Date(s.start_time);
+              days.add(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
+            });
+            return days.size;
+          };
+
           // If we need more sessions but primary doctor has no slots, find other doctors in same specialization
-          if (availableSlots.length < neededSessions && specialization) {
+          if (getUniqueDaysCount(availableSlots) < neededSessions && specialization) {
             const alternativeDoctors = await this.doctorsRepo.find({
               where: { specialization: specialization, is_active: true }
             });
@@ -199,15 +208,24 @@ export class PackagesService {
                });
                
                availableSlots = availableSlots.concat(altSlots);
-               if (availableSlots.length >= neededSessions) break;
+               if (getUniqueDaysCount(availableSlots) >= neededSessions) break;
             }
             
             // Sort by start_time so we book earliest possible slots
             availableSlots.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
           }
 
+          const bookedDates = new Set<string>();
+
           for (const slot of availableSlots) {
             if (neededSessions <= 0) break;
+            
+            const slotDate = new Date(slot.start_time);
+            const dateString = `${slotDate.getFullYear()}-${slotDate.getMonth()}-${slotDate.getDate()}`;
+            
+            if (bookedDates.has(dateString)) {
+               continue; // Only one session per day
+            }
                 
             // Book the slot
             await this.schedulingService.bookSlot(slot.id);
@@ -225,6 +243,8 @@ export class PackagesService {
               is_deducted: false,
             });
             await this.sessionsRepo.save(session);
+            
+            bookedDates.add(dateString);
             neededSessions--;
           }
         }
