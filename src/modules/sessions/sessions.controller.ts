@@ -38,13 +38,14 @@ export class SessionsController {
 
   @Put(':id/reschedule')
   @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN, UserRole.OPERATIONS_MANAGER)
-  @ApiOperation({ summary: 'Reschedule session date/time or room' })
+  @ApiOperation({ summary: 'Reschedule session date/time, doctor or room' })
   reschedule(
     @Param('id') id: string,
     @Body('session_date') sessionDate: string,
     @Body('room_id') roomId?: string,
+    @Body('doctor_id') doctorId?: string,
   ) {
-    return this.sessionsService.reschedule(id, sessionDate, roomId);
+    return this.sessionsService.reschedule(id, sessionDate, roomId, doctorId);
   }
 
   @Get()

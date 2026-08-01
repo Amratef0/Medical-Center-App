@@ -39,7 +39,7 @@ export class SessionsService {
     return qb.orderBy('session.session_date', 'ASC').getMany();
   }
 
-  async reschedule(id: string, newDateStr: string, room_id?: string) {
+  async reschedule(id: string, newDateStr: string, room_id?: string, doctor_id?: string) {
     const session = await this.findOne(id);
     const newDate = new Date(newDateStr);
 
@@ -50,6 +50,9 @@ export class SessionsService {
     session.session_date = newDate;
     if (room_id) {
       session.room_id = room_id;
+    }
+    if (doctor_id) {
+      session.doctor_id = doctor_id;
     }
     return this.sessionsRepo.save(session);
   }
