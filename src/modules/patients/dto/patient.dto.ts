@@ -17,6 +17,11 @@ export class CreatePatientDto {
   @IsString()
   last_name: string;
 
+  @ApiPropertyOptional({ description: 'الاسم رباعي بالعربي' })
+  @IsOptional()
+  @IsString()
+  full_name_ar?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
@@ -26,6 +31,16 @@ export class CreatePatientDto {
   @IsOptional()
   @IsDateString()
   date_of_birth?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  nationality?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  occupation?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -51,6 +66,16 @@ export class CreatePatientDto {
   @IsOptional()
   @IsString()
   national_id_photo?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  national_id_front?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  national_id_back?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

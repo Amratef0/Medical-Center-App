@@ -21,8 +21,34 @@ export class SessionsController {
     return this.sessionsService.create(dto);
   }
 
-@Get()
-@ApiOperation({ summary: 'Get all sessions' })
+  @Get('calendar-view')
+  @ApiOperation({ summary: 'Get calendar sessions between dates' })
+  @ApiQuery({ name: 'from', required: true, type: String })
+  @ApiQuery({ name: 'to', required: true, type: String })
+  @ApiQuery({ name: 'doctor_id', required: false, type: String })
+  @ApiQuery({ name: 'room_id', required: false, type: String })
+  getCalendarView(
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @Query('doctor_id') doctorId?: string,
+    @Query('room_id') roomId?: string,
+  ) {
+    return this.sessionsService.getCalendarView(from, to, doctorId, roomId);
+  }
+
+  @Put(':id/reschedule')
+  @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN, UserRole.OPERATIONS_MANAGER)
+  @ApiOperation({ summary: 'Reschedule session date/time or room' })
+  reschedule(
+    @Param('id') id: string,
+    @Body('session_date') sessionDate: string,
+    @Body('room_id') roomId?: string,
+  ) {
+    return this.sessionsService.reschedule(id, sessionDate, roomId);
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Get all sessions' })
 @ApiQuery({ name: 'page', required: false, type: Number })
 @ApiQuery({ name: 'limit', required: false, type: Number })
 @ApiQuery({ name: 'search', required: false, type: String })
@@ -72,6 +98,27 @@ findByPatient(
     @Body('confirm_status') confirmStatus: SessionConfirmStatus,
   ) {
     return this.sessionsService.confirm(id, confirmStatus);
+  }
+
+  @Get('daily-followup')
+  @ApiOperation({ summary: 'Get daily follow-up summary and session status list' })
+  @ApiQuery({ name: 'date', required: false, type: String })
+  getDailyFollowUp(@Query('date') date?: string) {
+    return this.sessionsService.getDailyFollowUp(date);
+  }
+
+  @Post(':id/check-in')
+  @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN, UserRole.OPERATIONS_MANAGER)
+  @ApiOperation({ summary: 'Check-in patient for a session' })
+  checkIn(@Param('id') id: string) {
+    return this.sessionsService.checkIn(id);
+  }
+
+  @Post(':id/check-out')
+  @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN, UserRole.OPERATIONS_MANAGER, UserRole.DOCTOR)
+  @ApiOperation({ summary: 'Check-out patient after a session' })
+  checkOut(@Param('id') id: string) {
+    return this.sessionsService.checkOut(id);
   }
 
   @Post(':id/start')

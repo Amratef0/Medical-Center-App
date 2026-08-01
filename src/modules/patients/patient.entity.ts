@@ -22,6 +22,16 @@ export enum PatientStatus {
   ASSESSMENT_DROPOFF = 'ASSESSMENT_DROPOFF',
 }
 
+export enum ReferralSource {
+  SOCIAL_MEDIA = 'Social Media',
+  GOOGLE_SEARCH = 'Google Search',
+  FRIEND = 'Friend',
+  DOCTOR_REFERRAL = 'Doctor Referral',
+  ADVERTISEMENT = 'Advertisement',
+  WALK_IN = 'Walk-in',
+  OTHER = 'Other',
+}
+
 @Entity('patients')
 export class Patient {
   @ApiProperty()
@@ -32,6 +42,10 @@ export class Patient {
   @Column({ unique: true, length: 50 })
   patient_code: string;
 
+  @ApiProperty({ required: false })
+  @Column({ unique: true, length: 50, nullable: true })
+  profile_number: string;
+
   @ApiProperty()
   @Column()
   first_name: string;
@@ -40,6 +54,10 @@ export class Patient {
   @Column()
   last_name: string;
 
+  @ApiProperty({ required: false, description: 'الاسم رباعي بالعربي' })
+  @Column({ nullable: true })
+  full_name_ar: string;
+
   @ApiProperty({ required: false })
   @Column({ nullable: true })
   gender: string;
@@ -47,6 +65,14 @@ export class Patient {
   @ApiProperty({ required: false })
   @Column({ type: 'date', nullable: true })
   date_of_birth: Date;
+
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
+  nationality: string;
+
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
+  occupation: string;
 
   @ApiProperty({ required: false })
   @Column({ nullable: true })
@@ -67,6 +93,14 @@ export class Patient {
   @ApiProperty({ required: false })
   @Column({ type: 'text', nullable: true })
   national_id_photo: string;
+
+  @ApiProperty({ required: false })
+  @Column({ type: 'text', nullable: true })
+  national_id_front: string;
+
+  @ApiProperty({ required: false })
+  @Column({ type: 'text', nullable: true })
+  national_id_back: string;
 
   @ApiProperty({ required: false })
   @Column({ nullable: true })

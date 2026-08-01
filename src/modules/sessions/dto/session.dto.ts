@@ -105,4 +105,14 @@ export class CreateAttendanceDto {
   @IsOptional()
   @IsString()
   reason?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  check_in_time?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  check_out_time?: string;
 }
