@@ -20,6 +20,7 @@ import { SessionsModule } from './modules/sessions/sessions.module';
 import { WaitlistModule } from './modules/waitlist/waitlist.module';
 import { RoomsModule } from './modules/rooms/rooms.module';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
     UsersModule,
     RoomsModule,
     WhatsappModule,
+    NotificationsModule,
     // Ebrahim-dev
     ServicesModule,
     PackagesModule,
