@@ -79,16 +79,23 @@ findByPatient(
   return this.sessionsService.findByPatient(patientId, +page, +limit);
 }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get session by ID' })
-  findOne(@Param('id') id: string) {
-    return this.sessionsService.findOne(id);
+  @Get('daily-followup')
+  @ApiOperation({ summary: 'Get daily follow-up summary and session status list' })
+  @ApiQuery({ name: 'date', required: false, type: String })
+  getDailyFollowUp(@Query('date') date?: string) {
+    return this.sessionsService.getDailyFollowUp(date);
   }
 
   @Get('date/:date')
   @ApiOperation({ summary: 'Get all sessions for a specific date (YYYY-MM-DD)' })
   findByDate(@Param('date') date: string) {
     return this.sessionsService.findByDate(date);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get session by ID' })
+  findOne(@Param('id') id: string) {
+    return this.sessionsService.findOne(id);
   }
 
   @Put(':id/confirm')
@@ -99,13 +106,6 @@ findByPatient(
     @Body('confirm_status') confirmStatus: SessionConfirmStatus,
   ) {
     return this.sessionsService.confirm(id, confirmStatus);
-  }
-
-  @Get('daily-followup')
-  @ApiOperation({ summary: 'Get daily follow-up summary and session status list' })
-  @ApiQuery({ name: 'date', required: false, type: String })
-  getDailyFollowUp(@Query('date') date?: string) {
-    return this.sessionsService.getDailyFollowUp(date);
   }
 
   @Post(':id/check-in')
