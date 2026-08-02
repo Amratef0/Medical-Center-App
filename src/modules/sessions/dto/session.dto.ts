@@ -3,6 +3,7 @@ import {
   IsBoolean,
   IsDateString,
   IsEnum,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
@@ -57,6 +58,11 @@ export class CreateSessionDto {
   @IsOptional()
   @IsUUID()
   room_id?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  scheduled_duration_minutes?: number;
 }
 
 export class UpdateSessionDto extends PartialType(CreateSessionDto) {
@@ -94,6 +100,21 @@ export class UpdateSessionDto extends PartialType(CreateSessionDto) {
   @IsOptional()
   @IsDateString()
   end_time?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  payment_verified?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  evaluation_report?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  scheduled_duration_minutes?: number;
 }
 
 export class CreateAttendanceDto {

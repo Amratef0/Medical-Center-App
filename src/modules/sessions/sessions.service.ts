@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
-import { Session, SessionConfirmStatus, SessionStatus } from './session.entity';
+import { Session, SessionConfirmStatus, SessionStatus, SessionType } from './session.entity';
 import { Attendance } from './attendance.entity';
 import { CreateSessionDto, UpdateSessionDto, CreateAttendanceDto } from './dto/session.dto';
 
@@ -15,7 +15,12 @@ export class SessionsService {
   ) {}
 
   async create(dto: CreateSessionDto): Promise<Session> {
-    const session = this.sessionsRepo.create(dto);
+    const isAssessment = dto.session_type === SessionType.ASSESSMENT;
+    const session = this.sessionsRepo.create({
+      ...dto,
+      scheduled_duration_minutes: dto.scheduled_duration_minutes || (isAssessment ? 60 : 45),
+      payment_verified: isAssessment ? false : true, // assessment requires explicit payment verification by finance
+    });
     return this.sessionsRepo.save(session);
   }
 
@@ -141,6 +146,9 @@ export class SessionsService {
 
   async startSession(id: string): Promise<Session> {
     const session = await this.findOne(id);
+    if (session.session_type === SessionType.ASSESSMENT && !session.payment_verified) {
+      throw new BadRequestException('⛔ لا يمكن بدء جلسة التقييم قبل تأكيد الدفع من الحسابات | Assessment session cannot begin until payment is verified by Finance');
+    }
     session.start_time = new Date();
     return this.sessionsRepo.save(session);
   }
@@ -148,12 +156,16 @@ export class SessionsService {
   async endSession(id: string): Promise<Session> {
     const session = await this.findOne(id);
     session.end_time = new Date();
-    session.status = SessionStatus.ATTENDED; // Set to attended when ended
+    session.status = SessionStatus.ATTENDED;
+    this.calculateDurationAndAlert(session);
     return this.sessionsRepo.save(session);
   }
 
   async checkIn(sessionId: string): Promise<{ session: Session; attendance: Attendance }> {
     const session = await this.findOne(sessionId);
+    if (session.session_type === SessionType.ASSESSMENT && !session.payment_verified) {
+      throw new BadRequestException('⛔ لا يمكن بدء جلسة التقييم قبل تأكيد الدفع من الحسابات | Assessment session cannot begin until payment is verified by Finance');
+    }
     session.start_time = new Date();
     await this.sessionsRepo.save(session);
 
@@ -176,6 +188,7 @@ export class SessionsService {
     const session = await this.findOne(sessionId);
     session.end_time = new Date();
     session.status = SessionStatus.ATTENDED;
+    this.calculateDurationAndAlert(session);
     await this.sessionsRepo.save(session);
 
     let attendance = await this.attendanceRepo.findOne({ where: { session_id: sessionId } });
@@ -190,6 +203,35 @@ export class SessionsService {
     }
     const savedAttendance = await this.attendanceRepo.save(attendance);
     return { session, attendance: savedAttendance };
+  }
+
+  private calculateDurationAndAlert(session: Session): void {
+    const start = session.start_time || session.session_date;
+    if (start && session.end_time) {
+      const elapsedMs = new Date(session.end_time).getTime() - new Date(start).getTime();
+      const actualMins = Math.max(1, Math.round(elapsedMs / 60000));
+      session.actual_duration_minutes = actualMins;
+
+      const scheduled = session.scheduled_duration_minutes || 60;
+      if (session.session_type === SessionType.ASSESSMENT && actualMins < scheduled - 15) {
+        session.duration_warning_generated = true;
+        console.warn(`⚠️ [EARLY TERMINATION ALERT] Assessment session ${session.id} finished in ${actualMins} mins (scheduled for ${scheduled} mins).`);
+      }
+    }
+  }
+
+  async verifyPayment(id: string, verifierName = 'Finance Staff'): Promise<Session> {
+    const session = await this.findOne(id);
+    session.payment_verified = true;
+    session.payment_verified_by = verifierName;
+    session.payment_verified_at = new Date();
+    return this.sessionsRepo.save(session);
+  }
+
+  async updateEvaluationReport(id: string, reportText: string): Promise<Session> {
+    const session = await this.findOne(id);
+    session.evaluation_report = reportText;
+    return this.sessionsRepo.save(session);
   }
 
   async getDailyFollowUp(dateStr?: string) {

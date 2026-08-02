@@ -136,6 +136,20 @@ findByPatient(
     return this.sessionsService.endSession(id);
   }
 
+  @Post(':id/verify-payment')
+  @Roles(UserRole.FINANCE, UserRole.ADMIN, UserRole.RECEPTIONIST)
+  @ApiOperation({ summary: 'Verify assessment session payment by Finance' })
+  verifyPayment(@Param('id') id: string, @Body('verifier_name') verifierName?: string) {
+    return this.sessionsService.verifyPayment(id, verifierName);
+  }
+
+  @Put(':id/evaluation-report')
+  @Roles(UserRole.DOCTOR, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Update doctor assessment evaluation report' })
+  updateEvaluationReport(@Param('id') id: string, @Body('evaluation_report') reportText: string) {
+    return this.sessionsService.updateEvaluationReport(id, reportText);
+  }
+
   @Put(':id')
   @Roles(UserRole.RECEPTIONIST, UserRole.DOCTOR, UserRole.ADMIN)
   @ApiOperation({ summary: 'Update session (status, notes, etc.)' })

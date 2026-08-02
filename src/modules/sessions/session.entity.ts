@@ -135,6 +135,34 @@ export class Session {
   @Column({ type: 'timestamptz', nullable: true })
   end_time: Date;
 
+  @ApiProperty({ default: false })
+  @Column({ default: false })
+  payment_verified: boolean;
+
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
+  payment_verified_by: string;
+
+  @ApiProperty({ required: false })
+  @Column({ type: 'timestamptz', nullable: true })
+  payment_verified_at: Date;
+
+  @ApiProperty({ default: 60, description: 'Configurable duration in minutes for assessment/treatment (30, 60, 90)' })
+  @Column({ default: 60 })
+  scheduled_duration_minutes: number;
+
+  @ApiProperty({ required: false, description: 'Actual elapsed duration in minutes calculated on checkout/end' })
+  @Column({ nullable: true })
+  actual_duration_minutes: number;
+
+  @ApiProperty({ default: false, description: 'True if assessment finished significantly earlier than scheduled' })
+  @Column({ default: false })
+  duration_warning_generated: boolean;
+
+  @ApiProperty({ required: false })
+  @Column({ type: 'text', nullable: true })
+  evaluation_report: string;
+
   @ApiProperty()
   @CreateDateColumn()
   created_at: Date;
