@@ -45,21 +45,24 @@ export class SessionsService {
   }
 
   async reschedule(id: string, newDateStr: string, room_id?: string, doctor_id?: string) {
-    const session = await this.findOne(id);
+    await this.findOne(id); // verify existence
     const newDate = new Date(newDateStr);
 
     if (isNaN(newDate.getTime())) {
       throw new BadRequestException('Invalid new session date');
     }
 
-    session.session_date = newDate;
+    const updateData: Record<string, any> = {
+      session_date: newDate,
+    };
     if (room_id) {
-      session.room_id = room_id;
+      updateData.room_id = room_id;
     }
     if (doctor_id) {
-      session.doctor_id = doctor_id;
+      updateData.doctor_id = doctor_id;
     }
-    return this.sessionsRepo.save(session);
+    await this.sessionsRepo.update(id, updateData);
+    return this.findOne(id);
   }
 
   async findAll(page = 1, limit = 10, search?: string, doctor_id?: string, from?: string, to?: string) {
