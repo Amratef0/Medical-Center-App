@@ -80,10 +80,16 @@ findByPatient(
 }
 
   @Get('daily-followup')
-  @ApiOperation({ summary: 'Get daily follow-up summary and session status list' })
+  @ApiOperation({ summary: 'Get daily follow-up summary and session status list with pagination' })
   @ApiQuery({ name: 'date', required: false, type: String })
-  getDailyFollowUp(@Query('date') date?: string) {
-    return this.sessionsService.getDailyFollowUp(date);
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  getDailyFollowUp(
+    @Query('date') date?: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+  ) {
+    return this.sessionsService.getDailyFollowUp(date, +page, +limit);
   }
 
   @Get('date/:date')

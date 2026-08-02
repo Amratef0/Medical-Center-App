@@ -237,14 +237,14 @@ export class SessionsService {
     return this.sessionsRepo.save(session);
   }
 
-  async getDailyFollowUp(dateStr?: string) {
+  async getDailyFollowUp(dateStr?: string, page = 1, limit = 10) {
     const targetDate = dateStr ? new Date(dateStr) : new Date();
     const startOfDay = new Date(targetDate);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const sessions = await this.sessionsRepo.find({
+    const allSessions = await this.sessionsRepo.find({
       where: {
         session_date: Between(startOfDay, endOfDay) as any,
       },
@@ -254,10 +254,10 @@ export class SessionsService {
       },
     });
 
-    const total = sessions.length;
-    const attended = sessions.filter((s) => s.status === SessionStatus.ATTENDED || s.attendance?.status === ('ATTENDED' as any));
-    const missed = sessions.filter((s) => s.status === SessionStatus.MISSED || s.attendance?.status === ('ABSENT' as any));
-    const pending = sessions.filter((s) => s.status === SessionStatus.SCHEDULED && s.attendance?.status !== ('ATTENDED' as any) && s.attendance?.status !== ('ABSENT' as any));
+    const total = allSessions.length;
+    const attended = allSessions.filter((s) => s.status === SessionStatus.ATTENDED || s.attendance?.status === ('ATTENDED' as any));
+    const missed = allSessions.filter((s) => s.status === SessionStatus.MISSED || s.attendance?.status === ('ABSENT' as any));
+    const pending = allSessions.filter((s) => s.status === SessionStatus.SCHEDULED && s.attendance?.status !== ('ATTENDED' as any) && s.attendance?.status !== ('ABSENT' as any));
 
     const followUpActions = missed.map((s) => ({
       session_id: s.id,
@@ -269,6 +269,10 @@ export class SessionsService {
       recommended_action: 'الاتصال بالمريض لإعادة الجدولة وتحديد سبب عدم الحضور',
     }));
 
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const paginatedSessions = allSessions.slice(startIndex, endIndex);
+
     return {
       date: startOfDay.toISOString().split('T')[0],
       summary: {
@@ -278,8 +282,12 @@ export class SessionsService {
         missed_count: missed.length,
         follow_up_needed: followUpActions.length,
       },
-      sessions,
+      sessions: paginatedSessions,
       follow_up_actions: followUpActions,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
     };
   }
 
