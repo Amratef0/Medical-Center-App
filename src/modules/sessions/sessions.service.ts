@@ -19,7 +19,7 @@ export class SessionsService {
     const session = this.sessionsRepo.create({
       ...dto,
       scheduled_duration_minutes: dto.scheduled_duration_minutes || (isAssessment ? 60 : 45),
-      payment_verified: isAssessment ? false : true, // assessment requires explicit payment verification by finance
+      payment_verified: false, // Default to unverified for all session types until payment is confirmed
     });
     return this.sessionsRepo.save(session);
   }
