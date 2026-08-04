@@ -290,6 +290,13 @@ export class PackagesService {
     return savedPP;
   }
 
+  async findAllPatientPackages(): Promise<PatientPackage[]> {
+    return this.patientPackagesRepo.find({
+      relations: ['package', 'package.package_services', 'package.package_services.service'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
   async getPatientPackages(patientId: string): Promise<PatientPackage[]> {
     return this.patientPackagesRepo.find({
       where: { patient_id: patientId },

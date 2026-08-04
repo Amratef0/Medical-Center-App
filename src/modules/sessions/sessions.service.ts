@@ -70,6 +70,8 @@ export class SessionsService {
       .createQueryBuilder('session')
       .leftJoinAndSelect('session.patient', 'patient')
       .leftJoinAndSelect('session.doctor', 'doctor')
+      .leftJoinAndSelect('session.treatment_plan', 'treatment_plan')
+      .leftJoinAndSelect('session.room', 'room')
       .leftJoinAndSelect('session.attendance', 'attendance');
 
     if (search) {

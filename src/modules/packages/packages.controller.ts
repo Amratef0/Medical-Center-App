@@ -83,6 +83,13 @@ export class PackagesController {
 export class PatientPackagesController {
   constructor(private readonly packagesService: PackagesService) {}
 
+  @Get()
+  @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN, UserRole.DOCTOR, UserRole.FINANCE)
+  @ApiOperation({ summary: 'Get all patient packages across the center' })
+  getAllPatientPackages() {
+    return this.packagesService.findAllPatientPackages();
+  }
+
   @Get('patient/:patientId')
   @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN, UserRole.DOCTOR, UserRole.FINANCE)
   @ApiOperation({ summary: 'Get all packages for a patient' })
