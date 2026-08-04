@@ -91,6 +91,10 @@ export class Patient {
   referral_source: string;
 
   @ApiProperty({ required: false })
+  @Column({ nullable: true })
+  referral_doctor_name: string;
+
+  @ApiProperty({ required: false })
   @Column({ type: 'text', nullable: true })
   national_id_photo: string;
 

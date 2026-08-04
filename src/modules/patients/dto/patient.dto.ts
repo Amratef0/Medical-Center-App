@@ -65,6 +65,11 @@ export class CreatePatientDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  referral_doctor_name?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   national_id_photo?: string;
 
   @ApiPropertyOptional()
