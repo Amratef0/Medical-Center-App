@@ -41,6 +41,18 @@ export class ServicesController {
     return this.servicesService.findActive();
   }
 
+  @Get('categories')
+  @ApiOperation({ summary: 'Get service categories' })
+  getCategories() {
+    return this.servicesService.getCategories();
+  }
+
+  @Get('by-category/:category')
+  @ApiOperation({ summary: 'Get active services by category' })
+  findByCategory(@Param('category') category: string) {
+    return this.servicesService.findByCategory(category);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get service by ID' })
   findOne(@Param('id') id: string) {

@@ -18,15 +18,33 @@ export class ServicesService {
 
   async findAll(): Promise<Service[]> {
     return this.servicesRepo.find({
-      order: { created_at: 'DESC' },
+      order: { category: 'ASC', sort_order: 'ASC', name: 'ASC' },
     });
   }
 
   async findActive(): Promise<Service[]> {
     return this.servicesRepo.find({
       where: { is_active: true },
-      order: { name: 'ASC' },
+      order: { category: 'ASC', sort_order: 'ASC', name: 'ASC' },
     });
+  }
+
+  async findByCategory(category: string): Promise<Service[]> {
+    return this.servicesRepo.find({
+      where: { category: category as any, is_active: true },
+      order: { sort_order: 'ASC', name: 'ASC' },
+    });
+  }
+
+  async getCategories() {
+    return [
+      { key: 'NEURO_PT', label: 'علاج طبيعي أعصاب' },
+      { key: 'ORTHO_PT', label: 'علاج طبيعي عظام' },
+      { key: 'PEDIATRIC_PT', label: 'علاج طبيعي أطفال' },
+      { key: 'SPEECH_THERAPY', label: 'التخاطب' },
+      { key: 'NUTRITION', label: 'التغذية' },
+      { key: 'GENERAL', label: 'خدمات عامة' },
+    ];
   }
 
   async findOne(id: string): Promise<Service> {
