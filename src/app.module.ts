@@ -21,6 +21,7 @@ import { WaitlistModule } from './modules/waitlist/waitlist.module';
 import { RoomsModule } from './modules/rooms/rooms.module';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ContractsModule } from './modules/contracts/contracts.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     TreatmentPlansModule,
     SessionsModule,
     WaitlistModule,
+    ContractsModule,
   ],
 })
 export class AppModule {}
