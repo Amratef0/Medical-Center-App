@@ -9,13 +9,15 @@ import {
 import { PatientStatus } from '../patient.entity';
 
 export class CreatePatientDto {
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
-  first_name: string;
+  first_name?: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
-  last_name: string;
+  last_name?: string;
 
   @ApiPropertyOptional({ description: 'الاسم رباعي بالعربي' })
   @IsOptional()
@@ -66,6 +68,11 @@ export class CreatePatientDto {
   @IsOptional()
   @IsString()
   referral_doctor_name?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  referral_friend_name?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

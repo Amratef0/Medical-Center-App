@@ -24,7 +24,7 @@ export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.OPERATIONS_MANAGER)
+  @Roles(UserRole.ADMIN, UserRole.OPERATIONS_MANAGER, UserRole.RECEPTIONIST)
   @ApiOperation({ summary: 'Create a new room' })
   create(@Body() dto: CreateRoomDto) {
     return this.roomsService.create(dto);
@@ -44,7 +44,7 @@ export class RoomsController {
   }
 
   @Put(':id')
-  @Roles(UserRole.ADMIN, UserRole.OPERATIONS_MANAGER)
+  @Roles(UserRole.ADMIN, UserRole.OPERATIONS_MANAGER, UserRole.RECEPTIONIST)
   @ApiOperation({ summary: 'Update room' })
   update(@Param('id') id: string, @Body() dto: UpdateRoomDto) {
     return this.roomsService.update(id, dto);

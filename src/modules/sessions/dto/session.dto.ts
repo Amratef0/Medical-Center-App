@@ -111,6 +111,16 @@ export class UpdateSessionDto extends PartialType(CreateSessionDto) {
   @IsString()
   evaluation_report?: string;
 
+  @ApiPropertyOptional({ description: 'Mandatory reason why the session was cancelled' })
+  @IsOptional()
+  @IsString()
+  cancellation_reason?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  cancelled_by?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsNumber()

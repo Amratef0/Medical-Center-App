@@ -11,6 +11,11 @@ export class CreateRoomDto {
   @IsString()
   @IsNotEmpty()
   code: string;
+
+  @ApiProperty({ required: false, default: true })
+  @IsBoolean()
+  @IsOptional()
+  is_active?: boolean;
 }
 
 export class UpdateRoomDto {

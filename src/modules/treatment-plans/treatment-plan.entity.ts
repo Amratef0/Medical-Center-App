@@ -36,6 +36,10 @@ export class TreatmentPlan {
   @Column({ nullable: true })
   doctor_id: string;
 
+  @ApiProperty({ required: false, description: 'ID of the doctor who conducted the assessment' })
+  @Column({ nullable: true })
+  assessed_by_doctor_id: string;
+
   @ApiProperty()
   @Column()
   total_sessions: number;

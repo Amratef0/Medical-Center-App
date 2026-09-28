@@ -4,6 +4,7 @@ import { Repository, Between } from 'typeorm';
 import { Session, SessionConfirmStatus, SessionStatus, SessionType } from './session.entity';
 import { Attendance } from './attendance.entity';
 import { CreateSessionDto, UpdateSessionDto, CreateAttendanceDto } from './dto/session.dto';
+import { User } from '../users/user.entity';
 
 @Injectable()
 export class SessionsService {
@@ -293,8 +294,18 @@ export class SessionsService {
     };
   }
 
-  async update(id: string, dto: UpdateSessionDto): Promise<Session> {
+  async update(id: string, dto: UpdateSessionDto, user?: User): Promise<Session> {
     const session = await this.findOne(id);
+    if (dto.status === SessionStatus.CANCELED) {
+      if (!dto.cancellation_reason && !session.cancellation_reason) {
+        throw new BadRequestException('سبب الإلغاء إلزامي | Cancellation reason is mandatory');
+      }
+      session.cancellation_reason = dto.cancellation_reason || session.cancellation_reason;
+      session.cancelled_at = new Date();
+      if (user?.name || dto.cancelled_by) {
+        session.cancelled_by = dto.cancelled_by || user?.name || 'Staff';
+      }
+    }
     Object.assign(session, dto);
     return this.sessionsRepo.save(session);
   }

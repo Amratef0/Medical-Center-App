@@ -26,6 +26,7 @@ export enum SessionType {
   ASSESSMENT = 'ASSESSMENT',
   TREATMENT = 'TREATMENT',
   FOLLOWUP = 'FOLLOWUP',
+  RE_ASSESSMENT = 'RE_ASSESSMENT',
 }
 
 export enum SessionConfirmStatus {
@@ -162,6 +163,18 @@ export class Session {
   @ApiProperty({ required: false })
   @Column({ type: 'text', nullable: true })
   evaluation_report: string;
+
+  @ApiProperty({ required: false, description: 'Mandatory reason why the session was cancelled' })
+  @Column({ type: 'text', nullable: true })
+  cancellation_reason: string;
+
+  @ApiProperty({ required: false })
+  @Column({ type: 'timestamptz', nullable: true })
+  cancelled_at: Date;
+
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
+  cancelled_by: string;
 
   @ApiProperty()
   @CreateDateColumn()

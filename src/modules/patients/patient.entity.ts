@@ -46,12 +46,12 @@ export class Patient {
   @Column({ unique: true, length: 50, nullable: true })
   profile_number: string;
 
-  @ApiProperty()
-  @Column()
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
   first_name: string;
 
-  @ApiProperty()
-  @Column()
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
   last_name: string;
 
   @ApiProperty({ required: false, description: 'الاسم رباعي بالعربي' })
@@ -93,6 +93,10 @@ export class Patient {
   @ApiProperty({ required: false })
   @Column({ nullable: true })
   referral_doctor_name: string;
+
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
+  referral_friend_name: string;
 
   @ApiProperty({ required: false })
   @Column({ type: 'text', nullable: true })

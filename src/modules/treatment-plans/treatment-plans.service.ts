@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { TreatmentPlan } from './treatment-plan.entity';
 import { TreatmentPlanService } from './treatment-plan-service.entity';
 import { CreateTreatmentPlanDto, UpdateTreatmentPlanDto } from './dto/treatment-plan.dto';
+import { User } from '../users/user.entity';
 
 @Injectable()
 export class TreatmentPlansService {
@@ -14,8 +15,11 @@ export class TreatmentPlansService {
     private planServicesRepo: Repository<TreatmentPlanService>,
   ) {}
 
-  async create(dto: CreateTreatmentPlanDto): Promise<TreatmentPlan> {
+  async create(dto: CreateTreatmentPlanDto, user?: User): Promise<TreatmentPlan> {
     const { plan_services, ...planData } = dto;
+    if (!planData.doctor_id && planData.assessed_by_doctor_id) {
+      planData.doctor_id = planData.assessed_by_doctor_id;
+    }
     const plan = this.plansRepo.create(planData);
     const saved = await this.plansRepo.save(plan);
 

@@ -37,6 +37,11 @@ export class CreateTreatmentPlanDto {
   @IsUUID()
   doctor_id?: string;
 
+  @ApiPropertyOptional({ description: 'ID of the doctor who conducted the assessment' })
+  @IsOptional()
+  @IsUUID()
+  assessed_by_doctor_id?: string;
+
   @ApiProperty()
   @IsInt()
   @Min(1)

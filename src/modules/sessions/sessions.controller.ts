@@ -4,7 +4,8 @@ import { SessionsService } from './sessions.service';
 import { CreateSessionDto, UpdateSessionDto, CreateAttendanceDto } from './dto/session.dto';
 import { JwtAccessGuard } from '../../common/guards/jwt.guards';
 import { RolesGuard, Roles } from '../../common/guards/roles.guard';
-import { UserRole } from '../users/user.entity';
+import { UserRole, User } from '../users/user.entity';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SessionConfirmStatus } from './session.entity';
 
 @ApiTags('Sessions')
@@ -157,10 +158,10 @@ findByPatient(
   }
 
   @Put(':id')
-  @Roles(UserRole.RECEPTIONIST, UserRole.DOCTOR, UserRole.ADMIN)
+  @Roles(UserRole.RECEPTIONIST, UserRole.DOCTOR, UserRole.ADMIN, UserRole.OPERATIONS_MANAGER)
   @ApiOperation({ summary: 'Update session (status, notes, etc.)' })
-  update(@Param('id') id: string, @Body() dto: UpdateSessionDto) {
-    return this.sessionsService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateSessionDto, @CurrentUser() user?: User) {
+    return this.sessionsService.update(id, dto, user);
   }
 
   @Delete(':id')

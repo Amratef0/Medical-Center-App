@@ -4,7 +4,8 @@ import { TreatmentPlansService } from './treatment-plans.service';
 import { CreateTreatmentPlanDto, UpdateTreatmentPlanDto } from './dto/treatment-plan.dto';
 import { JwtAccessGuard } from '../../common/guards/jwt.guards';
 import { RolesGuard, Roles } from '../../common/guards/roles.guard';
-import { UserRole } from '../users/user.entity';
+import { UserRole, User } from '../users/user.entity';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Treatment Plans')
 @ApiBearerAuth('access-token')
@@ -14,10 +15,10 @@ export class TreatmentPlansController {
   constructor(private readonly treatmentPlansService: TreatmentPlansService) {}
 
   @Post()
-  @Roles(UserRole.DOCTOR, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Create a treatment plan (Doctor only)' })
-  create(@Body() dto: CreateTreatmentPlanDto) {
-    return this.treatmentPlansService.create(dto);
+  @Roles(UserRole.DOCTOR, UserRole.ADMIN, UserRole.OPERATIONS_MANAGER)
+  @ApiOperation({ summary: 'Create a treatment plan (Doctor or Operations)' })
+  create(@Body() dto: CreateTreatmentPlanDto, @CurrentUser() user?: User) {
+    return this.treatmentPlansService.create(dto, user);
   }
 
  @Get()
