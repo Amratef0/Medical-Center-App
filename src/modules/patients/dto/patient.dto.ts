@@ -3,6 +3,7 @@ import {
   IsDateString,
   IsEmail,
   IsEnum,
+  IsNumber,
   IsOptional,
   IsString,
 } from 'class-validator';
@@ -31,8 +32,13 @@ export class CreatePatientDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsDateString()
+  @IsString()
   date_of_birth?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  age?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -96,13 +102,22 @@ export class CreatePatientDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsEmail()
+  @IsString()
   email?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  registeredBy?: string;
+
+  @ApiPropertyOptional({ enum: PatientStatus })
+  @IsOptional()
+  status?: any;
 }
 
 export class UpdatePatientDto extends PartialType(CreatePatientDto) {

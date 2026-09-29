@@ -51,12 +51,19 @@ export class PatientsService {
     };
   }
 
-  async create(dto: CreatePatientDto, createdBy: User): Promise<any> {
+  async create(dto: CreatePatientDto, createdBy?: User): Promise<any> {
+    const { age, registeredBy, ...patientData } = dto;
+
+    const status = dto.status && Object.values(PatientStatus).includes(dto.status as PatientStatus)
+      ? (dto.status as PatientStatus)
+      : PatientStatus.PENDING_ASSESSMENT;
+
     const patient = this.patientsRepo.create({
-      ...dto,
+      ...patientData,
+      status,
       patient_code: this.generatePatientCode(),
       profile_number: this.generateProfileNumber(),
-      created_by_id: createdBy.id,
+      created_by_id: createdBy?.id || undefined,
     });
     const saved = await this.patientsRepo.save(patient);
     return this.formatPatient(saved);
