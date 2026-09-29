@@ -5,6 +5,7 @@ import { Session, SessionConfirmStatus, SessionStatus, SessionType } from './ses
 import { Attendance } from './attendance.entity';
 import { CreateSessionDto, UpdateSessionDto, CreateAttendanceDto } from './dto/session.dto';
 import { User } from '../users/user.entity';
+import { SchedulingValidator } from '../scheduling/scheduling-validator.service';
 
 @Injectable()
 export class SessionsService {
@@ -13,16 +14,37 @@ export class SessionsService {
     private sessionsRepo: Repository<Session>,
     @InjectRepository(Attendance)
     private attendanceRepo: Repository<Attendance>,
+    private readonly schedulingValidator: SchedulingValidator,
   ) {}
 
   async create(dto: CreateSessionDto): Promise<Session> {
-    const isAssessment = dto.session_type === SessionType.ASSESSMENT;
-    const session = this.sessionsRepo.create({
-      ...dto,
-      scheduled_duration_minutes: dto.scheduled_duration_minutes || (isAssessment ? 60 : 45),
-      payment_verified: false, // Default to unverified for all session types until payment is confirmed
+    const durationMinutes = SchedulingValidator.resolveDurationMinutes(
+      dto.scheduled_duration_minutes,
+      dto.session_type,
+    );
+    const startsAt = new Date(dto.session_date);
+
+    return this.schedulingValidator.runInTransaction(async (queryRunner) => {
+      await this.schedulingValidator.assertSlotIsBookable(
+        {
+          sessionId: null,
+          doctorId: dto.doctor_id ?? null,
+          roomId: dto.room_id ?? null,
+          startsAt,
+          durationMinutes,
+          slotId: dto.slot_id ?? null,
+          previousSlotId: null,
+        },
+        queryRunner,
+      );
+
+      const session = queryRunner.manager.create(Session, {
+        ...dto,
+        scheduled_duration_minutes: durationMinutes,
+        payment_verified: false, // Default to unverified for all session types until payment is confirmed
+      });
+      return queryRunner.manager.save(session);
     });
-    return this.sessionsRepo.save(session);
   }
 
   async getCalendarView(from: string, to: string, doctor_id?: string, room_id?: string) {
@@ -46,23 +68,54 @@ export class SessionsService {
   }
 
   async reschedule(id: string, newDateStr: string, room_id?: string, doctor_id?: string) {
-    await this.findOne(id); // verify existence
     const newDate = new Date(newDateStr);
 
     if (isNaN(newDate.getTime())) {
       throw new BadRequestException('Invalid new session date');
     }
 
-    const updateData: Record<string, any> = {
-      session_date: newDate,
-    };
-    if (room_id) {
-      updateData.room_id = room_id;
-    }
-    if (doctor_id) {
-      updateData.doctor_id = doctor_id;
-    }
-    await this.sessionsRepo.update(id, updateData);
+    await this.schedulingValidator.runInTransaction(async (queryRunner) => {
+      const session = await queryRunner.manager
+        .createQueryBuilder(Session, 's')
+        .setLock('pessimistic_write')
+        .where('s.id = :id', { id })
+        .getOne();
+
+      if (!session) {
+        throw new NotFoundException('Session not found');
+      }
+
+      const nextDoctorId = doctor_id ?? session.doctor_id ?? null;
+      const nextRoomId = room_id ?? session.room_id ?? null;
+      const durationMinutes = SchedulingValidator.resolveDurationMinutes(
+        session.scheduled_duration_minutes,
+        session.session_type,
+      );
+
+      await this.schedulingValidator.assertSlotIsBookable(
+        {
+          sessionId: session.id,
+          doctorId: nextDoctorId,
+          roomId: nextRoomId,
+          startsAt: newDate,
+          durationMinutes,
+          slotId: session.slot_id ?? null,
+          previousSlotId: session.slot_id ?? null,
+        },
+        queryRunner,
+      );
+
+      session.session_date = newDate;
+      if (room_id) {
+        session.room_id = room_id;
+      }
+      if (doctor_id) {
+        session.doctor_id = doctor_id;
+      }
+
+      await queryRunner.manager.save(session);
+    });
+
     return this.findOne(id);
   }
 
