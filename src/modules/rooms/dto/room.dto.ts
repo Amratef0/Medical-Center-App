@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsInt, Min } from 'class-validator';
 
 export class CreateRoomDto {
   @ApiProperty()
@@ -16,6 +16,12 @@ export class CreateRoomDto {
   @IsBoolean()
   @IsOptional()
   is_active?: boolean;
+
+  @ApiProperty({ required: false, default: 1, minimum: 1 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  max_concurrent_sessions?: number;
 }
 
 export class UpdateRoomDto {
@@ -33,4 +39,10 @@ export class UpdateRoomDto {
   @IsBoolean()
   @IsOptional()
   is_active?: boolean;
+
+  @ApiProperty({ required: false, minimum: 1 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  max_concurrent_sessions?: number;
 }

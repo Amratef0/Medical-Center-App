@@ -3,14 +3,16 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { SessionsService } from './sessions.service';
 import { CreateSessionDto, UpdateSessionDto, CreateAttendanceDto } from './dto/session.dto';
 import { JwtAccessGuard } from '../../common/guards/jwt.guards';
-import { RolesGuard, Roles } from '../../common/guards/roles.guard';
+import { AllowAnyStaff, RolesGuard, Roles } from '../../common/guards/roles.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { UserRole, User } from '../users/user.entity';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SessionConfirmStatus } from './session.entity';
 
 @ApiTags('Sessions')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAccessGuard, RolesGuard)
+@UseGuards(JwtAccessGuard, RolesGuard, PermissionsGuard)
 @Controller('sessions')
 export class SessionsController {
   constructor(private readonly sessionsService: SessionsService) {}
@@ -23,6 +25,7 @@ export class SessionsController {
   }
 
   @Get('calendar-view')
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get calendar sessions between dates' })
   @ApiQuery({ name: 'from', required: true, type: String })
   @ApiQuery({ name: 'to', required: true, type: String })
@@ -50,6 +53,7 @@ export class SessionsController {
   }
 
   @Get()
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get all sessions' })
 @ApiQuery({ name: 'page', required: false, type: Number })
 @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -69,6 +73,7 @@ findAll(
 }
 
 @Get('patient/:patientId')
+@AllowAnyStaff()
 @ApiOperation({ summary: 'Get all sessions for a patient' })
 @ApiQuery({ name: 'page', required: false, type: Number })
 @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -81,6 +86,7 @@ findByPatient(
 }
 
   @Get('daily-followup')
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get daily follow-up summary and session status list with pagination' })
   @ApiQuery({ name: 'date', required: false, type: String })
   @ApiQuery({ name: 'page', required: false, type: Number })
@@ -94,12 +100,14 @@ findByPatient(
   }
 
   @Get('date/:date')
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get all sessions for a specific date (YYYY-MM-DD)' })
   findByDate(@Param('date') date: string) {
     return this.sessionsService.findByDate(date);
   }
 
   @Get(':id')
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get session by ID' })
   findOne(@Param('id') id: string) {
     return this.sessionsService.findOne(id);
@@ -145,13 +153,15 @@ findByPatient(
 
   @Post(':id/verify-payment')
   @Roles(UserRole.FINANCE, UserRole.ADMIN, UserRole.RECEPTIONIST)
+  @RequirePermission('finance.verify_payment')
   @ApiOperation({ summary: 'Verify assessment session payment by Finance' })
-  verifyPayment(@Param('id') id: string, @Body('verifier_name') verifierName?: string) {
-    return this.sessionsService.verifyPayment(id, verifierName);
+  verifyPayment(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.sessionsService.verifyPayment(id, user);
   }
 
   @Put(':id/evaluation-report')
   @Roles(UserRole.DOCTOR, UserRole.ADMIN)
+  @RequirePermission('sessions.evaluation_report')
   @ApiOperation({ summary: 'Update doctor assessment evaluation report' })
   updateEvaluationReport(@Param('id') id: string, @Body('evaluation_report') reportText: string) {
     return this.sessionsService.updateEvaluationReport(id, reportText);
@@ -187,6 +197,7 @@ export class AttendanceController {
   }
 
   @Get()
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get attendance record for a session' })
   get(@Param('sessionId') sessionId: string) {
     return this.sessionsService.getAttendance(sessionId);

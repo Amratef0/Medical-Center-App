@@ -3,14 +3,34 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
-import { json, urlencoded } from 'express';
+import helmet from 'helmet';
+
+function parseCorsOrigins(raw: string | undefined): string[] {
+  const fallback = 'http://localhost:5173,http://localhost:3000';
+  return (raw || fallback)
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
 
-  app.use(json({ limit: '50mb' }));
-  app.use(urlencoded({ extended: true, limit: '50mb' }));
+  const corsOrigins = parseCorsOrigins(config.get<string>('CORS_ORIGINS'));
+
+  app.use((req, res, next) => {
+    const isSwagger =
+      req.path === '/api/docs' ||
+      req.path.startsWith('/api/docs/') ||
+      req.path.startsWith('/api/docs-json');
+    if (isSwagger) {
+      return helmet({ contentSecurityPolicy: false })(req, res, next);
+    }
+    return helmet()(req, res, next);
+  });
+
+  // Default Express body size limits apply. Large uploads: see T-011.
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -20,10 +40,29 @@ async function bootstrap() {
     }),
   );
 
-  // Enable CORS
   app.enableCors({
-    origin: true,
+    origin: (origin, callback) => {
+      // No Origin (curl, same-origin, server-to-server) — allow.
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      // With credentials: 'include', the allowlist must echo the request Origin
+      // string. callback(null, true) can leave Access-Control-Allow-Credentials empty.
+      if (corsOrigins.includes(origin)) {
+        callback(null, origin);
+        return;
+      }
+      callback(new Error(`Origin ${origin} is not allowed by CORS`), false);
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'X-User-Role',
+      'X-Storage-Key',
+    ],
     credentials: true,
   });
 
@@ -54,6 +93,7 @@ async function bootstrap() {
     .addTag('Finance', 'Payments, discounts & invoices')
     .addTag('Follow-ups', 'Follow-up tasks & WhatsApp automation')
     .addTag('Reporting', 'Reports & analytics')
+    .addTag('Attachments', 'File uploads & downloads')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);

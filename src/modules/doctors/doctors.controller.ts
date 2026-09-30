@@ -8,7 +8,7 @@ import {
   UpdateDoctorAvailabilityDto,
 } from './dto/doctor.dto';
 import { JwtAccessGuard } from '../../common/guards/jwt.guards';
-import { RolesGuard, Roles } from '../../common/guards/roles.guard';
+import { AllowAnyStaff, RolesGuard, Roles } from '../../common/guards/roles.guard';
 import { UserRole } from '../users/user.entity';
 
 @ApiTags('Doctors')
@@ -26,6 +26,7 @@ export class DoctorsController {
   }
 
 @Get()
+@AllowAnyStaff()
 @ApiOperation({ summary: 'Get all active doctors' })
 @ApiQuery({ name: 'page', required: false, type: Number })
 @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -39,6 +40,7 @@ findAll(
 }
 
   @Get(':id')
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get doctor by ID with availability' })
   findOne(@Param('id') id: string) {
     return this.doctorsService.findOne(id);
@@ -74,6 +76,7 @@ export class DoctorAvailabilityController {
   }
 
   @Get()
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get all availability slots for a doctor' })
   get(@Param('doctorId') doctorId: string) {
     return this.doctorsService.getAvailability(doctorId);

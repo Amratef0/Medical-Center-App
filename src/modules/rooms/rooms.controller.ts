@@ -13,7 +13,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { RoomsService } from './rooms.service';
 import { CreateRoomDto, UpdateRoomDto } from './dto/room.dto';
 import { JwtAccessGuard } from '../../common/guards/jwt.guards';
-import { RolesGuard, Roles } from '../../common/guards/roles.guard';
+import { AllowAnyStaff, RolesGuard, Roles } from '../../common/guards/roles.guard';
 import { UserRole } from '../users/user.entity';
 
 @ApiTags('Rooms')
@@ -31,6 +31,7 @@ export class RoomsController {
   }
 
   @Get()
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get all rooms' })
   @ApiQuery({ name: 'search', required: false, type: String })
   findAll(@Query('search') search?: string) {
@@ -38,6 +39,7 @@ export class RoomsController {
   }
 
   @Get(':id')
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get room by ID' })
   findOne(@Param('id') id: string) {
     return this.roomsService.findOne(id);

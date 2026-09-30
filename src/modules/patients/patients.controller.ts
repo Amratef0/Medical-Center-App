@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query,UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, ParseUUIDPipe, Query,UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { PatientsService } from './patients.service';
 import { CreatePatientDto, UpdatePatientDto } from './dto/patient.dto';
@@ -39,28 +39,28 @@ findAll(
   @Get(':id')
   @Roles(UserRole.RECEPTIONIST, UserRole.DOCTOR, UserRole.ADMIN, UserRole.OPERATIONS_MANAGER)
   @ApiOperation({ summary: 'Get patient by ID' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.patientsService.findOne(id);
   }
 
   @Put(':id')
   @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN)
   @ApiOperation({ summary: 'Update patient' })
-  update(@Param('id') id: string, @Body() dto: UpdatePatientDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdatePatientDto) {
     return this.patientsService.update(id, dto);
   }
 
   @Put(':id/complete-assessment')
   @Roles(UserRole.DOCTOR, UserRole.ADMIN)
   @ApiOperation({ summary: 'Mark patient assessment as completed' })
-  completeAssessment(@Param('id') id: string) {
+  completeAssessment(@Param('id', ParseUUIDPipe) id: string) {
     return this.patientsService.completeAssessment(id);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Delete patient (Admin only)' })
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.patientsService.remove(id);
   }
 }

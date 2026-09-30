@@ -19,7 +19,7 @@ import {
   SlotQueryDto,
 } from './dto/scheduling.dto';
 import { JwtAccessGuard } from '../../common/guards/jwt.guards';
-import { RolesGuard, Roles } from '../../common/guards/roles.guard';
+import { AllowAnyStaff, RolesGuard, Roles } from '../../common/guards/roles.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { User, UserRole } from '../users/user.entity';
 
@@ -51,18 +51,21 @@ export class SchedulingController {
   }
 
   @Get('slots')
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get all slots (with optional filters)' })
   findSlots(@Query() query: SlotQueryDto) {
     return this.schedulingService.findSlots(query);
   }
 
   @Get('availability')
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get available slots for booking' })
   findAvailableSlots(@Query() query: SlotQueryDto) {
     return this.schedulingService.findAvailableSlots(query);
   }
 
   @Get('slots/:id')
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get slot by ID' })
   findOne(@Param('id') id: string) {
     return this.schedulingService.findOne(id);

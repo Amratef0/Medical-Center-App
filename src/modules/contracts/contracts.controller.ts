@@ -22,6 +22,13 @@ import { JwtAccessGuard } from '../../common/guards/jwt.guards';
 import { RolesGuard, Roles } from '../../common/guards/roles.guard';
 import { UserRole } from '../users/user.entity';
 
+const CONTRACT_READ_ROLES = [
+  UserRole.ADMIN,
+  UserRole.FINANCE,
+  UserRole.RECEPTIONIST,
+  UserRole.OPERATIONS_MANAGER,
+] as const;
+
 @ApiTags('Contracts')
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessGuard, RolesGuard)
@@ -39,24 +46,28 @@ export class ContractsController {
   }
 
   @Get()
+  @Roles(...CONTRACT_READ_ROLES)
   @ApiOperation({ summary: 'جلب جميع التعاقدات' })
   findAllContracts() {
     return this.contractsService.findAllContracts();
   }
 
   @Get('active')
+  @Roles(...CONTRACT_READ_ROLES)
   @ApiOperation({ summary: 'جلب التعاقدات النشطة فقط' })
   findActiveContracts() {
     return this.contractsService.findActiveContracts();
   }
 
   @Get('stats')
+  @Roles(...CONTRACT_READ_ROLES)
   @ApiOperation({ summary: 'إحصائيات التعاقدات' })
   getStats() {
     return this.contractsService.getContractStats();
   }
 
   @Get(':id')
+  @Roles(...CONTRACT_READ_ROLES)
   @ApiOperation({ summary: 'جلب تعاقد بالمعرف' })
   findContractById(@Param('id') id: string) {
     return this.contractsService.findContractById(id);
@@ -96,18 +107,21 @@ export class ContractsController {
   }
 
   @Get('letters/all')
+  @Roles(...CONTRACT_READ_ROLES)
   @ApiOperation({ summary: 'جلب جميع الخطابات' })
   findAllLetters() {
     return this.contractsService.findAllLetters();
   }
 
   @Get(':contractId/letters')
+  @Roles(...CONTRACT_READ_ROLES)
   @ApiOperation({ summary: 'جلب خطابات تعاقد محدد' })
   findLettersByContract(@Param('contractId') contractId: string) {
     return this.contractsService.findLettersByContract(contractId);
   }
 
   @Get('letters/:id')
+  @Roles(...CONTRACT_READ_ROLES)
   @ApiOperation({ summary: 'جلب خطاب بالمعرف' })
   findLetterById(@Param('id') id: string) {
     return this.contractsService.findLetterById(id);

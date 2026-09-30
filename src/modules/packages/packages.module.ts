@@ -11,11 +11,16 @@ import { PatientPackage } from './patient-package.entity';
 import { Session } from '../sessions/session.entity';
 import { SchedulingModule } from '../scheduling/scheduling.module';
 import { Doctor } from '../doctors/doctor.entity';
+import { Patient } from '../patients/patient.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Package, PackageService, PatientPackage, Session, Doctor]),
+    TypeOrmModule.forFeature([Package, PackageService, PatientPackage, Session, Doctor, Patient]),
     SchedulingModule,
+    NotificationsModule,
+    SettingsModule,
   ],
   controllers: [PackagesController, PatientPackagesController],
   providers: [PackagesService],

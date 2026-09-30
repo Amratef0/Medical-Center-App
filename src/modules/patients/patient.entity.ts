@@ -98,6 +98,7 @@ export class Patient {
   @Column({ nullable: true })
   referral_friend_name: string;
 
+  /** Legacy base64 blobs — migrate to `attachments` (T-011); see scripts/backfill-patient-attachments.stub.ts */
   @ApiProperty({ required: false })
   @Column({ type: 'text', nullable: true })
   national_id_photo: string;
@@ -109,6 +110,10 @@ export class Patient {
   @ApiProperty({ required: false })
   @Column({ type: 'text', nullable: true })
   national_id_back: string;
+
+  @ApiProperty({ description: 'When true, outbound WhatsApp must not be sent' })
+  @Column({ default: false })
+  whatsapp_opt_out: boolean;
 
   @ApiProperty({ required: false })
   @Column({ nullable: true })

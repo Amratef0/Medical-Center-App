@@ -37,6 +37,13 @@ export class Doctor {
   @Column({ default: true })
   is_active: boolean;
 
+  @ApiProperty({
+    required: false,
+    description: 'Max non-canceled sessions per calendar day (Asia/Riyadh); null = unlimited',
+  })
+  @Column({ type: 'int', nullable: true })
+  max_sessions_per_day: number | null;
+
   @OneToMany(() => DoctorAvailability, (da) => da.doctor)
   availability: DoctorAvailability[];
 

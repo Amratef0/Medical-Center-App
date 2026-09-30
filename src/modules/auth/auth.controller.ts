@@ -7,6 +7,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto, RefreshTokenDto } from './dto/auth.dto';
 import { JwtAccessGuard } from '../../common/guards/jwt.guards';
@@ -20,6 +21,12 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
+  @Throttle({
+    default: {
+      limit: Number(process.env.THROTTLE_LOGIN_LIMIT ?? 5),
+      ttl: Number(process.env.THROTTLE_LOGIN_TTL_MS ?? 900_000),
+    },
+  })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login and get access + refresh tokens' })
   login(@Body() dto: LoginDto) {

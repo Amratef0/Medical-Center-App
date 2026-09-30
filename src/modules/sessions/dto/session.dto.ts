@@ -103,11 +103,6 @@ export class UpdateSessionDto extends PartialType(CreateSessionDto) {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsBoolean()
-  payment_verified?: boolean;
-
-  @ApiPropertyOptional()
-  @IsOptional()
   @IsString()
   evaluation_report?: string;
 

@@ -9,6 +9,7 @@ import { Session, SessionStatus, SessionType } from '../sessions/session.entity'
 import { Patient } from '../patients/patient.entity';
 import { Room } from '../rooms/room.entity';
 import { ScheduleSlot } from './schedule-slot.entity';
+import { CapacityService } from '../capacity/capacity.service';
 
 export type ConflictOutcome = 'doctor_overlap' | 'room_overlap' | 'slot_full';
 
@@ -28,7 +29,10 @@ export interface AssertSlotIsBookableParams {
 export class SchedulingValidator {
   private readonly logger = new Logger(SchedulingValidator.name);
 
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly capacityService: CapacityService,
+  ) {}
 
   async runInTransaction<T>(work: (queryRunner: QueryRunner) => Promise<T>): Promise<T> {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -103,37 +107,15 @@ export class SchedulingValidator {
       }
     }
 
-    if (roomId) {
-      const roomConflict = await this.findOverlappingSession(
-        queryRunner,
-        {
-          resourceColumn: 'room_id',
-          resourceId: roomId,
-          startsAt,
-          endAt,
-          excludeSessionId: sessionId,
-        },
-      );
-      if (roomConflict) {
-        let roomName: string | undefined = roomConflict.room?.name;
-        if (!roomName && roomId) {
-          const room = await queryRunner.manager.findOne(Room, {
-            where: { id: roomId },
-          });
-          roomName = room?.name;
-        }
-        this.throwConflict('room_overlap', {
-          doctorId,
-          roomId,
-          sessionId,
-          conflicting: roomConflict,
-          startsAt,
-          roomName,
-        });
-      }
-    }
+    await this.capacityService.assertBookingCapacity({
+      doctorId,
+      roomId,
+      startsAt,
+      durationMinutes,
+      sessionId,
+      queryRunner,
+    });
 
-    // T-006: co-booking / capacity > 1 on the same doctor or room is deferred.
     // Slot capacity is independent and still enforced when slot_id is set.
     await this.applySlotCapacityChange(queryRunner, {
       slotId,

@@ -1,29 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
+import { SessionStatus, SessionType } from '../src/modules/sessions/session.entity';
 
-describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
-
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    await app.init();
-  });
-
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
-  });
-
-  afterEach(async () => {
-    await app.close();
+describe('placeholder removed', () => {
+  it('is covered by booking.e2e-spec.ts', () => {
+    expect(SessionType.ASSESSMENT).toBe('ASSESSMENT');
+    expect(SessionStatus.SCHEDULED).toBe('SCHEDULED');
   });
 });

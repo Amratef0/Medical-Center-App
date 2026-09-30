@@ -12,7 +12,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ServicesService } from './services.service';
 import { CreateServiceDto, UpdateServiceDto } from './dto/service.dto';
 import { JwtAccessGuard } from '../../common/guards/jwt.guards';
-import { RolesGuard, Roles } from '../../common/guards/roles.guard';
+import { AllowAnyStaff, RolesGuard, Roles } from '../../common/guards/roles.guard';
 import { UserRole } from '../users/user.entity';
 
 @ApiTags('Services')
@@ -30,30 +30,35 @@ export class ServicesController {
   }
 
   @Get()
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get all services' })
   findAll() {
     return this.servicesService.findAll();
   }
 
   @Get('active')
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get only active services' })
   findActive() {
     return this.servicesService.findActive();
   }
 
   @Get('categories')
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get service categories' })
   getCategories() {
     return this.servicesService.getCategories();
   }
 
   @Get('by-category/:category')
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get active services by category' })
   findByCategory(@Param('category') category: string) {
     return this.servicesService.findByCategory(category);
   }
 
   @Get(':id')
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get service by ID' })
   findOne(@Param('id') id: string) {
     return this.servicesService.findOne(id);

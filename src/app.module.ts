@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -22,10 +24,26 @@ import { RoomsModule } from './modules/rooms/rooms.module';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ContractsModule } from './modules/contracts/contracts.module';
+import { PrescriptionsModule } from './modules/prescriptions/prescriptions.module';
+import { SettingsModule } from './modules/settings/settings.module';
+import { CapacityModule } from './modules/capacity/capacity.module';
+import { StorageModule } from './modules/storage/storage.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
+import { AttachmentsModule } from './modules/attachments/attachments.module';
+import { JobsModule } from './modules/jobs/jobs.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => [
+        {
+          ttl: Number(config.get('THROTTLE_TTL_MS') ?? 60_000),
+          limit: Number(config.get('THROTTLE_LIMIT') ?? 100),
+        },
+      ],
+    }),
     DatabaseModule,
     // Shared
     AuthModule,
@@ -47,6 +65,19 @@ import { ContractsModule } from './modules/contracts/contracts.module';
     SessionsModule,
     WaitlistModule,
     ContractsModule,
+    PrescriptionsModule,
+    SettingsModule,
+    CapacityModule,
+    PermissionsModule,
+    StorageModule,
+    AttachmentsModule,
+    JobsModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

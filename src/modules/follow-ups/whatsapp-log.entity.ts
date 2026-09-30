@@ -11,8 +11,12 @@ import { FollowUpTask } from './follow-up.entity';
 
 export enum WhatsAppMessageStatus {
   PENDING = 'PENDING',
+  QUEUED = 'QUEUED',
   SENT = 'SENT',
+  DELIVERED = 'DELIVERED',
+  READ = 'READ',
   FAILED = 'FAILED',
+  MOCK = 'MOCK',
 }
 
 @Entity('whatsapp_logs')
@@ -56,6 +60,18 @@ export class WhatsAppLog {
   @ApiProperty({ required: false })
   @Column({ type: 'timestamptz', nullable: true })
   sent_at: Date;
+
+  @ApiProperty({ required: false, description: 'When a PENDING/QUEUED message should be sent' })
+  @Column({ type: 'timestamptz', nullable: true })
+  scheduled_for: Date;
+
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
+  provider_message_id: string;
+
+  @ApiProperty()
+  @Column({ type: 'int', default: 0 })
+  attempt_count: number;
 
   @ApiProperty({ required: false })
   @Column({ type: 'text', nullable: true })

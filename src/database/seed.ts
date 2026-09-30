@@ -5,7 +5,17 @@ import { seedPatients } from './seeds/patient.seed';
 import { seedDemoData } from './seeds/demo.seed';
 import { seedServicePricing } from './seeds/service-pricing.seed';
 
+function assertLocalDatabase() {
+  const host = (process.env.DB_HOST || '').toLowerCase();
+  const localHosts = new Set(['localhost', '127.0.0.1', '::1', 'postgres', 'db']);
+  if (process.env.NODE_ENV === 'production' || !localHosts.has(host)) {
+    console.error(`Refusing to seed "${host || '(empty)'}". The seed runs only against a local database.`);
+    process.exit(1);
+  }
+}
+
 async function runSeeds() {
+  assertLocalDatabase();
   await AppDataSource.initialize();
 
   console.log('🌱 Running seeds...');

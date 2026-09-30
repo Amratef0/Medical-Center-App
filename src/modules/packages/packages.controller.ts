@@ -17,13 +17,15 @@ import {
   AssignPackageDto,
 } from './dto/package.dto';
 import { JwtAccessGuard } from '../../common/guards/jwt.guards';
-import { RolesGuard, Roles } from '../../common/guards/roles.guard';
+import { AllowAnyStaff, RolesGuard, Roles } from '../../common/guards/roles.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { User, UserRole } from '../users/user.entity';
 
 @ApiTags('Packages')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAccessGuard, RolesGuard)
+@UseGuards(JwtAccessGuard, RolesGuard, PermissionsGuard)
 @Controller('packages')
 export class PackagesController {
   constructor(private readonly packagesService: PackagesService) {}
@@ -36,6 +38,7 @@ export class PackagesController {
   }
 
   @Get()
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get all packages' })
   findAll() {
     return this.packagesService.findAll();
@@ -50,12 +53,14 @@ export class PackagesController {
 
   @Post('assign')
   @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN)
+  @RequirePermission('packages.assign')
   @ApiOperation({ summary: 'Assign a package to a patient' })
   assign(@Body() dto: AssignPackageDto, @CurrentUser() user: User) {
     return this.packagesService.assignToPatient(dto, user);
   }
 
   @Get(':id')
+  @AllowAnyStaff()
   @ApiOperation({ summary: 'Get package by ID' })
   findOne(@Param('id') id: string) {
     return this.packagesService.findOne(id);

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { Session, SessionConfirmStatus, SessionStatus, SessionType } from './session.entity';
@@ -6,15 +6,24 @@ import { Attendance } from './attendance.entity';
 import { CreateSessionDto, UpdateSessionDto, CreateAttendanceDto } from './dto/session.dto';
 import { User } from '../users/user.entity';
 import { SchedulingValidator } from '../scheduling/scheduling-validator.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { CapacityService } from '../capacity/capacity.service';
+import { SettingsService, CLINIC_TIMEZONE } from '../settings/settings.service';
+import { AttendanceStatus } from './attendance.entity';
 
 @Injectable()
 export class SessionsService {
+  private readonly logger = new Logger(SessionsService.name);
+
   constructor(
     @InjectRepository(Session)
     private sessionsRepo: Repository<Session>,
     @InjectRepository(Attendance)
     private attendanceRepo: Repository<Attendance>,
     private readonly schedulingValidator: SchedulingValidator,
+    private readonly notifications: NotificationsService,
+    private readonly capacityService: CapacityService,
+    private readonly settings: SettingsService,
   ) {}
 
   async create(dto: CreateSessionDto): Promise<Session> {
@@ -43,7 +52,11 @@ export class SessionsService {
         scheduled_duration_minutes: durationMinutes,
         payment_verified: false, // Default to unverified for all session types until payment is confirmed
       });
-      return queryRunner.manager.save(session);
+      const saved = await queryRunner.manager.save(session);
+      return saved;
+    }).then(async (saved) => {
+      await this.capacityService.handlePostBookingAlerts(saved);
+      return saved;
     });
   }
 
@@ -116,7 +129,9 @@ export class SessionsService {
       await queryRunner.manager.save(session);
     });
 
-    return this.findOne(id);
+    const updated = await this.findOne(id);
+    await this.capacityService.handlePostBookingAlerts(updated);
+    return updated;
   }
 
   async findAll(page = 1, limit = 10, search?: string, doctor_id?: string, from?: string, to?: string) {
@@ -217,7 +232,9 @@ export class SessionsService {
     session.end_time = new Date();
     session.status = SessionStatus.ATTENDED;
     this.calculateDurationAndAlert(session);
-    return this.sessionsRepo.save(session);
+    const saved = await this.sessionsRepo.save(session);
+    await this.notifyEarlyAssessment(saved);
+    return saved;
   }
 
   async checkIn(sessionId: string): Promise<{ session: Session; attendance: Attendance }> {
@@ -240,6 +257,7 @@ export class SessionsService {
       attendance.check_in_time = new Date();
     }
     const savedAttendance = await this.attendanceRepo.save(attendance);
+    await this.safeNotify(() => this.notifications.notifyAttendanceRecorded(sessionId));
     return { session, attendance: savedAttendance };
   }
 
@@ -249,6 +267,7 @@ export class SessionsService {
     session.status = SessionStatus.ATTENDED;
     this.calculateDurationAndAlert(session);
     await this.sessionsRepo.save(session);
+    await this.notifyEarlyAssessment(session);
 
     let attendance = await this.attendanceRepo.findOne({ where: { session_id: sessionId } });
     if (!attendance) {
@@ -274,17 +293,44 @@ export class SessionsService {
       const scheduled = session.scheduled_duration_minutes || 60;
       if (session.session_type === SessionType.ASSESSMENT && actualMins < scheduled - 15) {
         session.duration_warning_generated = true;
-        console.warn(`⚠️ [EARLY TERMINATION ALERT] Assessment session ${session.id} finished in ${actualMins} mins (scheduled for ${scheduled} mins).`);
       }
     }
   }
 
-  async verifyPayment(id: string, verifierName = 'Finance Staff'): Promise<Session> {
+  private async notifyEarlyAssessment(session: Session): Promise<void> {
+    if (!session.duration_warning_generated || session.session_type !== SessionType.ASSESSMENT) return;
+    await this.safeNotify(() => this.notifications.notifyAssessmentEndedEarlier(
+      session.id,
+      session.actual_duration_minutes || 0,
+      session.scheduled_duration_minutes || 60,
+    ));
+  }
+
+  private async safeNotify(work: () => Promise<void>): Promise<void> {
+    try {
+      await work();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'unknown error';
+      this.logger.warn(`Notification was not stored: ${message}`);
+    }
+  }
+
+  private staffDisplayName(user?: User): string {
+    if (!user) return 'Finance Staff';
+    return user.name?.trim() || user.email?.trim() || 'Staff';
+  }
+
+  async verifyPayment(id: string, user?: User): Promise<Session> {
     const session = await this.findOne(id);
     session.payment_verified = true;
-    session.payment_verified_by = verifierName;
+    session.payment_verified_by = this.staffDisplayName(user);
     session.payment_verified_at = new Date();
-    return this.sessionsRepo.save(session);
+    const saved = await this.sessionsRepo.save(session);
+    if (saved.session_type === SessionType.ASSESSMENT) {
+      const name = saved.patient?.full_name_ar || saved.patient?.first_name || 'Patient';
+      await this.safeNotify(() => this.notifications.notifyPaymentVerified(name, saved.id));
+    }
+    return saved;
   }
 
   async updateEvaluationReport(id: string, reportText: string): Promise<Session> {
@@ -294,21 +340,23 @@ export class SessionsService {
   }
 
   async getDailyFollowUp(dateStr?: string, page = 1, limit = 10) {
-    const targetDate = dateStr ? new Date(dateStr) : new Date();
-    const startOfDay = new Date(targetDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(targetDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    const tz = (await this.settings.get(CLINIC_TIMEZONE)) ?? 'Asia/Riyadh';
+    const dateLabel =
+      dateStr ??
+      new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(new Date());
 
-    const allSessions = await this.sessionsRepo.find({
-      where: {
-        session_date: Between(startOfDay, endOfDay) as any,
-      },
-      relations: ['patient', 'doctor', 'attendance', 'room'],
-      order: {
-        session_date: 'ASC',
-      },
-    });
+    const allSessions = await this.sessionsRepo
+      .createQueryBuilder('session')
+      .leftJoinAndSelect('session.patient', 'patient')
+      .leftJoinAndSelect('session.doctor', 'doctor')
+      .leftJoinAndSelect('session.attendance', 'attendance')
+      .leftJoinAndSelect('session.room', 'room')
+      .where(`DATE(timezone(:tz, session.session_date)) = :date`, {
+        tz,
+        date: dateLabel,
+      })
+      .orderBy('session.session_date', 'ASC')
+      .getMany();
 
     const total = allSessions.length;
     const attended = allSessions.filter((s) => s.status === SessionStatus.ATTENDED || s.attendance?.status === ('ATTENDED' as any));
@@ -330,7 +378,7 @@ export class SessionsService {
     const paginatedSessions = allSessions.slice(startIndex, endIndex);
 
     return {
-      date: startOfDay.toISOString().split('T')[0],
+      date: dateLabel,
       summary: {
         total_sessions: total,
         attended_count: attended.length,
@@ -349,17 +397,25 @@ export class SessionsService {
 
   async update(id: string, dto: UpdateSessionDto, user?: User): Promise<Session> {
     const session = await this.findOne(id);
-    if (dto.status === SessionStatus.CANCELED) {
-      if (!dto.cancellation_reason && !session.cancellation_reason) {
+    const {
+      payment_verified: _pv,
+      cancelled_by: dtoCancelledBy,
+      ...patch
+    } = dto as UpdateSessionDto & { payment_verified?: boolean };
+
+    if (patch.status === SessionStatus.CANCELED) {
+      if (!patch.cancellation_reason && !session.cancellation_reason) {
         throw new BadRequestException('سبب الإلغاء إلزامي | Cancellation reason is mandatory');
       }
-      session.cancellation_reason = dto.cancellation_reason || session.cancellation_reason;
+      session.cancellation_reason = patch.cancellation_reason || session.cancellation_reason;
       session.cancelled_at = new Date();
-      if (user?.name || dto.cancelled_by) {
-        session.cancelled_by = dto.cancelled_by || user?.name || 'Staff';
+      if (user) {
+        session.cancelled_by = this.staffDisplayName(user);
+      } else if (dtoCancelledBy) {
+        session.cancelled_by = dtoCancelledBy;
       }
     }
-    Object.assign(session, dto);
+    Object.assign(session, patch);
     return this.sessionsRepo.save(session);
   }
 
@@ -383,12 +439,15 @@ export class SessionsService {
     }
 
     const existing = await this.attendanceRepo.findOne({ where: { session_id: sessionId } });
-    if (existing) {
-      Object.assign(existing, dto);
-      return this.attendanceRepo.save(existing);
+    const saved = existing
+      ? await this.attendanceRepo.save(Object.assign(existing, dto))
+      : await this.attendanceRepo.save(this.attendanceRepo.create({ ...dto, session_id: sessionId }));
+    if (dto.status === AttendanceStatus.ABSENT) {
+      await this.safeNotify(() => this.notifications.notifyMissedAppointment(sessionId));
+    } else if (dto.status === AttendanceStatus.ATTENDED) {
+      await this.safeNotify(() => this.notifications.notifyAttendanceRecorded(sessionId));
     }
-    const attendance = this.attendanceRepo.create({ ...dto, session_id: sessionId });
-    return this.attendanceRepo.save(attendance);
+    return saved;
   }
 
   async getAttendance(sessionId: string): Promise<Attendance> {

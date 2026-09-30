@@ -1,23 +1,30 @@
-import { DataSource } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
+import { DataSource, DataSourceOptions } from 'typeorm';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-export const AppDataSource = new DataSource({
-  type: 'postgres',
+/**
+ * Single connection definition for the Nest module and the TypeORM CLI.
+ * synchronize stays false in every environment. Schema changes ship as files
+ * in src/migrations, applied on boot via migrationsRun.
+ */
+export function buildDataSourceOptions(): DataSourceOptions {
+  const sslEnabled = process.env.DB_SSL === 'true';
 
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT),
+  return {
+    type: 'postgres',
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT),
+    username: process.env.DB_USERNAME,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    ...(sslEnabled ? { ssl: { rejectUnauthorized: false } } : {}),
+    entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+    migrations: [__dirname + '/../migrations/*{.ts,.js}'],
+    synchronize: false,
+    migrationsRun: true,
+    logging: process.env.NODE_ENV === 'development',
+  };
+}
 
-  username: process.env.DB_USERNAME,
-  password: process.env.DB_PASSWORD,
-
-  database: process.env.DB_NAME,
-
-  entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-
-  synchronize: process.env.NODE_ENV === 'development',
-
-  logging: process.env.NODE_ENV === 'development',
-});
+export const AppDataSource = new DataSource(buildDataSourceOptions());

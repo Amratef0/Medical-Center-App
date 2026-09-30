@@ -223,6 +223,7 @@ export class SchedulingService {
     slot.booked_count += 1;
     if (slot.booked_count >= slot.capacity) {
       slot.is_available = false;
+      // T-006: notify DOCTOR_SCHEDULE_FULL and CAPACITY_LIMIT_REACHED once the capacity model exists.
     }
 
     return this.slotsRepo.save(slot);

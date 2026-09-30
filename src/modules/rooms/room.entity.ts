@@ -25,6 +25,10 @@ export class Room {
   @Column({ default: true })
   is_active: boolean;
 
+  @ApiProperty({ default: 1, description: 'Max overlapping sessions allowed in this room' })
+  @Column({ type: 'int', default: 1 })
+  max_concurrent_sessions: number;
+
   @ApiProperty()
   @CreateDateColumn()
   created_at: Date;

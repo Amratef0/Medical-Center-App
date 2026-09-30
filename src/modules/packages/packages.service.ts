@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
@@ -18,9 +19,14 @@ import { Session, SessionStatus, SessionType } from '../sessions/session.entity'
 
 import { SchedulingService } from '../scheduling/scheduling.service';
 import { Doctor } from '../doctors/doctor.entity';
+import { Patient } from '../patients/patient.entity';
+import { NotificationsService } from '../notifications/notifications.service';
+import { PACKAGE_SESSIONS_THRESHOLD, SettingsService } from '../settings/settings.service';
 
 @Injectable()
 export class PackagesService {
+  private readonly logger = new Logger(PackagesService.name);
+
   constructor(
     @InjectRepository(Package)
     private packagesRepo: Repository<Package>,
@@ -32,7 +38,11 @@ export class PackagesService {
     private sessionsRepo: Repository<Session>,
     @InjectRepository(Doctor)
     private doctorsRepo: Repository<Doctor>,
+    @InjectRepository(Patient)
+    private patientsRepo: Repository<Patient>,
     private schedulingService: SchedulingService,
+    private readonly notifications: NotificationsService,
+    private readonly settings: SettingsService,
   ) {}
 
   // ──────────── Package CRUD ────────────
@@ -342,7 +352,22 @@ export class PackagesService {
       pp.status = PatientPackageStatus.EXHAUSTED;
     }
 
-    return this.patientPackagesRepo.save(pp);
+    const saved = await this.patientPackagesRepo.save(pp);
+    await this.alertIfPackageEnding(saved);
+    return saved;
+  }
+
+  private async alertIfPackageEnding(patientPackage: PatientPackage): Promise<void> {
+    try {
+      const threshold = await this.settings.getNumber(PACKAGE_SESSIONS_THRESHOLD, 3);
+      if (patientPackage.remaining_sessions > threshold) return;
+      const patient = await this.patientsRepo.findOne({ where: { id: patientPackage.patient_id } });
+      const name = patient?.full_name_ar || patient?.first_name || 'Patient';
+      await this.notifications.notifyPackageEndingSoon(name, patientPackage.remaining_sessions, patientPackage.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'unknown error';
+      this.logger.warn(`Package alert was not stored: ${message}`);
+    }
   }
 
   async getCompletedFirstSessions(dateString?: string): Promise<Session[]> {

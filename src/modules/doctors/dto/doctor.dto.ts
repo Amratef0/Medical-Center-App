@@ -7,6 +7,7 @@ import {
   IsString,
   Max,
   Min,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateDoctorDto {
@@ -28,6 +29,16 @@ export class CreateDoctorDto {
   @IsOptional()
   @IsEmail()
   email?: string;
+
+  @ApiPropertyOptional({
+    description: 'Daily session cap; omit or null for unlimited',
+    minimum: 1,
+  })
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null && value !== undefined)
+  @IsInt()
+  @Min(1)
+  max_sessions_per_day?: number | null;
 }
 
 export class UpdateDoctorDto extends PartialType(CreateDoctorDto) {

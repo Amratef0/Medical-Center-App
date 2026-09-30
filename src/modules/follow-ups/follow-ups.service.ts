@@ -18,19 +18,19 @@ export class FollowUpsService {
     const task = this.followUpsRepo.create(dto);
     const savedTask = await this.followUpsRepo.save(task);
 
-    // Save WhatsApp Log stub
+    // Honest mock log — never SENT without a real provider (T-009)
     const log = this.whatsappLogsRepo.create({
       patient_id: dto.patient_id,
       followup_task_id: savedTask.id,
       phone_number: '+1234567890', // placeholder phone number
       message_body: dto.message || `Missed session follow-up of type ${dto.type}`,
-      status: WhatsAppMessageStatus.SENT,
+      status: WhatsAppMessageStatus.MOCK,
       sent_at: new Date(),
     });
     await this.whatsappLogsRepo.save(log);
 
     console.log(
-      `📱 [WhatsApp Stub] Follow-up task created & logged for patient ${dto.patient_id}: ${dto.type}`,
+      `📱 [WhatsApp mock] Follow-up task logged for patient ${dto.patient_id}: ${dto.type}`,
     );
 
     return savedTask;
