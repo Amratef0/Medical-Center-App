@@ -404,6 +404,7 @@ export class ReportingService {
   async getFinanceReport(from: string, to: string) {
     const rangeStart = new Date(from);
     const rangeEnd = new Date(`${to}T23:59:59`);
+    const num = (v: unknown) => Number(v ?? 0);
 
     const pendingPayments = await this.paymentsRepo
       .createQueryBuilder('p')
@@ -446,38 +447,49 @@ export class ReportingService {
       .andWhere('i.status = :paid', { paid: InvoiceStatus.PAID })
       .getRawOne();
 
+    // payments.package_id is varchar; packages.id is uuid — join via
+    // patient_packages (real FK) and a cast fallback for legacy package_id.
     const revenueByPackage = await this.paymentsRepo
       .createQueryBuilder('p')
-      .leftJoin('packages', 'pkg', 'pkg.id = p.package_id')
+      .leftJoin(
+        'patient_packages',
+        'pp',
+        'pp.id = p.patient_package_id',
+      )
+      .leftJoin(
+        'packages',
+        'pkg',
+        'pkg.id = pp.package_id OR pkg.id::text = p.package_id',
+      )
       .select(`COALESCE(pkg.name, 'Other')`, 'category')
       .addSelect('COALESCE(SUM(p.amount), 0)', 'revenue')
       .addSelect('COUNT(*)', 'payments')
       .where('p.created_at >= :from', { from: rangeStart })
       .andWhere('p.created_at <= :to', { to: rangeEnd })
       .andWhere('p.status = :paid', { paid: PaymentStatus.PAID })
-      .groupBy('category')
+      .groupBy('pkg.name')
       .orderBy('revenue', 'DESC')
       .getRawMany();
 
     const outstanding =
-      Number(invoiceTotals.invoiced) - Number(paidInvoiceTotal.paid);
+      num(invoiceTotals?.invoiced) - num(paidInvoiceTotal?.paid);
 
     return {
       period: { from, to },
       pending_payments: {
-        amount: Number(pendingPayments.total),
-        count: Number(pendingPayments.count),
+        amount: num(pendingPayments?.total),
+        count: num(pendingPayments?.count),
       },
       verified_payments: {
-        amount: Number(verifiedPayments.total),
-        count: Number(verifiedPayments.count),
+        amount: num(verifiedPayments?.total),
+        count: num(verifiedPayments?.count),
       },
       outstanding_balance: outstanding,
-      discounts_granted: Number(discounts.total),
+      discounts_granted: num(discounts?.total),
       revenue_by_category: revenueByPackage.map((r) => ({
         category: r.category,
-        revenue: Number(r.revenue),
-        payments: Number(r.payments),
+        revenue: num(r.revenue),
+        payments: num(r.payments),
       })),
     };
   }
