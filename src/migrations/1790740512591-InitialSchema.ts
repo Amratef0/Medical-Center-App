@@ -23,6 +23,16 @@ export class InitialSchema1790740512591 implements MigrationInterface {
     name = 'InitialSchema1790740512591'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
+        // Production (and any DB created before this file) already has the
+        // baseline objects. Replaying CREATE TYPE crashes boot. Skip the SQL
+        // and let TypeORM record this migration as applied.
+        const alreadyThere = await queryRunner.query(
+            `SELECT 1 FROM pg_type WHERE typname = 'users_role_enum'`,
+        );
+        if (alreadyThere.length > 0) {
+            return;
+        }
+
         await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
         await queryRunner.query(`CREATE TYPE "public"."users_role_enum" AS ENUM('RECEPTIONIST', 'OPERATIONS_MANAGER', 'DOCTOR', 'FINANCE', 'CUSTOMER_SUPPORT', 'ADMIN')`);
         await queryRunner.query(`CREATE TABLE "users" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "email" character varying NOT NULL, "password_hash" character varying NOT NULL, "role" "public"."users_role_enum" NOT NULL, "is_active" boolean NOT NULL DEFAULT true, "refresh_token_hash" character varying, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_97672ac88f789774dd47f7c8be3" UNIQUE ("email"), CONSTRAINT "PK_a3ffb1c0c8416b9fc6f907b7433" PRIMARY KEY ("id"))`);
