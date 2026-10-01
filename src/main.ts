@@ -5,12 +5,18 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 
+const DEFAULT_CORS_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://mcsos-system-production.up.railway.app',
+];
+
 function parseCorsOrigins(raw: string | undefined): string[] {
-  const fallback = 'http://localhost:5173,http://localhost:3000';
-  return (raw || fallback)
+  const fromEnv = (raw || '')
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
+  return [...new Set([...DEFAULT_CORS_ORIGINS, ...fromEnv])];
 }
 
 async function bootstrap() {
@@ -19,15 +25,20 @@ async function bootstrap() {
 
   const corsOrigins = parseCorsOrigins(config.get<string>('CORS_ORIGINS'));
 
+  const helmetOptions = {
+    // The UI is a different Railway host. same-origin would block those fetches.
+    crossOriginResourcePolicy: { policy: 'cross-origin' as const },
+  };
+
   app.use((req, res, next) => {
     const isSwagger =
       req.path === '/api/docs' ||
       req.path.startsWith('/api/docs/') ||
       req.path.startsWith('/api/docs-json');
     if (isSwagger) {
-      return helmet({ contentSecurityPolicy: false })(req, res, next);
+      return helmet({ ...helmetOptions, contentSecurityPolicy: false })(req, res, next);
     }
-    return helmet()(req, res, next);
+    return helmet(helmetOptions)(req, res, next);
   });
 
   // Default Express body size limits apply. Large uploads: see T-011.
@@ -53,7 +64,9 @@ async function bootstrap() {
         callback(null, origin);
         return;
       }
-      callback(new Error(`Origin ${origin} is not allowed by CORS`), false);
+      // Do not throw. An Error here becomes a 500 with no CORS headers,
+      // and the browser reports a failed fetch instead of a clear denial.
+      callback(null, false);
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: [
