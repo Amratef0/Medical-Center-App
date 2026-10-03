@@ -1,6 +1,29 @@
-# 🏥 Medical Center App
+# 🏥 Medical Center App — Backend API
 
-A robust RESTful backend API for managing medical center operations, built with **NestJS**, **TypeORM**, and **PostgreSQL**. Handles authentication, patient/doctor management, and more — with full Swagger documentation.
+![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-TypeORM-4169E1?logo=postgresql&logoColor=white)
+![JWT](https://img.shields.io/badge/Auth-JWT%20%2B%20Passport-000000?logo=jsonwebtokens)
+![Swagger](https://img.shields.io/badge/Docs-Swagger-85EA2D?logo=swagger&logoColor=black)
+
+A robust RESTful backend API for managing medical center operations, built with **NestJS**, **TypeORM**, and **PostgreSQL**. It handles authentication, patient and doctor management, scheduling, finance, and more, with full Swagger documentation. The same API powers both the web dashboard and the Flutter mobile app.
+
+---
+
+## 📌 Table of Contents
+
+- [Tech Stack](#-tech-stack)
+- [Related Repositories](#-related-repositories)
+- [Getting Started](#️-getting-started)
+- [Environment Variables](#-environment-variables)
+- [Running the App](#️-running-the-app)
+- [Migrations](#️-migrations)
+- [Database Seeding](#-database-seeding)
+- [API Documentation](#-api-documentation)
+- [Authentication](#-authentication)
+- [Running Tests](#-running-tests)
+- [Project Structure](#-project-structure)
+- [Code Quality](#-code-quality)
 
 ---
 
@@ -9,9 +32,9 @@ A robust RESTful backend API for managing medical center operations, built with 
 | Technology | Purpose |
 |---|---|
 | [NestJS](https://nestjs.com/) v11 | Backend framework |
-| [TypeORM](https://typeorm.io/) v0.3 | ORM & database management |
+| [TypeORM](https://typeorm.io/) v0.3 | ORM & migrations |
 | [PostgreSQL](https://www.postgresql.org/) | Relational database |
-| [Passport.js](https://www.passportjs.org/) + JWT | Authentication & authorization |
+| [Passport.js](https://www.passportjs.org/) + JWT | Authentication & authorization (access + refresh tokens) |
 | [Swagger](https://swagger.io/) | API documentation |
 | [class-validator](https://github.com/typestack/class-validator) | Request validation |
 | [bcrypt](https://github.com/kelektiv/node.bcrypt.js) | Password hashing |
@@ -19,41 +42,43 @@ A robust RESTful backend API for managing medical center operations, built with 
 
 ---
 
-## 📁 Project Structure
+## 🔗 Related Repositories
+
+This repository is the API. The clients live in separate repositories:
+
+| Client | Repository |
+|---|---|
+| Web dashboard (React) | [Islam412/MCSOS-System](https://github.com/Islam412/MCSOS-System) |
+| Mobile app (Flutter) | [Amratef0/Medical_Center_MobileApp](https://github.com/Amratef0/Medical_Center_MobileApp) |
+
+For local development, clone this repo as `backend/` and the web dashboard as a sibling `frontend/` folder:
 
 ```
-src/
-├── app.module.ts        # Root module
-├── main.ts              # Application entry point
-├── database/
-│   └── seed.ts          # Database seeding script
-└── [feature modules]/   # Auth, Users, Doctors, Patients, etc.
-
-test/                    # End-to-end tests
+workspace/
+├── backend/     ← this repository
+└── frontend/    ← web dashboard
 ```
+
+The API listens on `PORT` from `.env` (default **3000**). The frontend's `VITE_API_BASE_URL` must be `http://localhost:3000` unless you change both.
 
 ---
 
-## ⚙️ Prerequisites
+## ⚙️ Getting Started
+
+### Prerequisites
 
 - **Node.js** >= 20 (see `.nvmrc`)
 - **npm** >= 9
-- **PostgreSQL** database running locally
+- **PostgreSQL** running locally
 
-The UI is a second repository, [Islam412/MCSOS-System](https://github.com/Islam412/MCSOS-System). Clone it as a sibling named `frontend/` next to this `backend/` folder. The parent folder layout and the port contract are in the workspace [README](../README.md). Product docs are in [docs/](../docs/README.md).
-
----
-
-## 🛠️ Installation
+### Installation
 
 ```bash
 git clone https://github.com/Amratef0/Medical-Center-App.git backend
 cd backend
 npm install
-cp .env.example .env
+cp .env.example .env     # then fill in your values
 ```
-
-The API listens on `PORT` from `.env`. The default is **3000**. The frontend `VITE_API_BASE_URL` must be `http://localhost:3000` unless you change both.
 
 ---
 
@@ -63,17 +88,19 @@ Copy `.env.example` to `.env`. The app reads:
 
 | Variable | Purpose |
 |---|---|
-| `DB_HOST` | Postgres host. The seed accepts only `localhost`, `127.0.0.1`, `::1`, `postgres`, or `db` |
+| `DB_HOST` | Postgres host. The seed script accepts only `localhost`, `127.0.0.1`, `::1`, `postgres`, or `db` |
 | `DB_PORT` | Postgres port |
 | `DB_USERNAME` | Postgres user |
 | `DB_PASSWORD` | Postgres password |
 | `DB_NAME` | Database name |
-| `PORT` | HTTP port. Default `3000` |
+| `PORT` | HTTP port (default `3000`) |
 | `NODE_ENV` | `development` turns SQL logging on |
 | `JWT_ACCESS_SECRET` | Access-token signing key |
 | `JWT_ACCESS_EXPIRES_IN` | Access-token lifetime |
 | `JWT_REFRESH_SECRET` | Refresh-token signing key |
 | `JWT_REFRESH_EXPIRES_IN` | Refresh-token lifetime |
+
+> Use long random values for the JWT secrets and never commit your `.env` file.
 
 ---
 
@@ -95,9 +122,7 @@ npm run start:debug
 
 ## 🗄️ Migrations
 
-`synchronize` is off. The running schema comes from `src/migrations/`. The app applies pending files on boot.
-
-An entity change does not merge without a migration beside it.
+`synchronize` is **off**. The schema comes from the files in `src/migrations/`, and the app applies pending migrations on boot. An entity change is not merged without a migration beside it.
 
 ```bash
 # After editing an entity, generate the SQL from the current database
@@ -110,36 +135,45 @@ npm run migration:run
 npm run migration:revert
 ```
 
-`1790740512591-InitialSchema.ts` is the baseline. On a database that already has the tables, insert the row instead of running the file:
+**Databases that already have the tables.** `1790740512591-InitialSchema.ts` is the baseline migration. On a database that already contains the schema, do not run the file. Insert its row instead, so TypeORM treats it as applied:
 
 ```sql
 INSERT INTO migrations (timestamp, name)
 VALUES (1790740512591, 'InitialSchema1790740512591');
 ```
 
-Railway was not changed from this repo. There is no production connection string in `.env`. After a scratch copy of production matches this baseline, insert that row there and do not execute the file.
+For a shared or production database, first verify on a scratch copy that it matches the baseline, then insert the row there as well.
 
 ---
 
 ## 🌱 Database Seeding
 
-Seed a local database only. The script exits if `DB_HOST` is not local, so it cannot be pointed at production.
+Seed a **local** database only. The script exits if `DB_HOST` is not a local host, so it cannot be pointed at production by mistake.
 
 ```bash
 npm run seed
 ```
 
-Staff logins created by that script live in `src/database/seeds/user.seed.ts`. They are for the local database. Do not reuse them on a deployed server.
+The staff logins created by the script are defined in `src/database/seeds/user.seed.ts`. They are meant for local development; never reuse them on a deployed server.
 
 ---
 
 ## 📖 API Documentation
 
-Once the app is running, Swagger docs are available at:
+Once the app is running, the Swagger docs are available at:
 
 ```
 http://localhost:3000/api
 ```
+
+---
+
+## 🔐 Authentication
+
+The API uses **JWT** with Passport.js strategies:
+
+- `POST /auth/login` — returns the access and refresh tokens
+- Protected routes require the header: `Authorization: Bearer <token>`
 
 ---
 
@@ -149,25 +183,33 @@ http://localhost:3000/api
 # Unit tests
 npm run test
 
-# Unit tests with watch mode
+# Unit tests in watch mode
 npm run test:watch
 
-# Test coverage
+# Coverage
 npm run test:cov
 
-# End-to-end tests against a throwaway Postgres (does not use the clinic database)
+# End-to-end tests against a throwaway Postgres (does not touch your local database)
 docker compose -f docker-compose.test.yml up -d --wait
 npm run test:e2e
 ```
 
 ---
 
-## 🔐 Authentication
+## 📁 Project Structure
 
-This API uses **JWT (JSON Web Tokens)** with Passport.js strategies:
+```
+src/
+├── app.module.ts            # Root module
+├── main.ts                  # Application entry point
+├── database/
+│   ├── seed.ts              # Database seeding script
+│   └── seeds/               # Seed data (e.g. user.seed.ts)
+├── migrations/              # TypeORM migrations
+└── [feature modules]/       # Auth, Users, Doctors, Patients, ...
 
-- `POST /auth/login` — Returns a JWT token
-- Protected routes require the `Authorization: Bearer <token>` header
+test/                        # End-to-end tests
+```
 
 ---
 
