@@ -27,8 +27,12 @@ export class PermissionsGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const { user } = request;
+    // This guard is also registered globally, so it runs before JwtAccessGuard
+    // and request.user is still empty. Denying here turns every protected
+    // action into "Forbidden resource". The controller guard runs again after
+    // JWT and performs the real check.
     if (!user?.id) {
-      return false;
+      return true;
     }
 
     const allowed = await this.permissionsService.hasPermission(
