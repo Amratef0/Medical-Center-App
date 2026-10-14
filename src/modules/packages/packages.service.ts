@@ -9,6 +9,10 @@ import { Repository } from 'typeorm';
 import { Package } from './package.entity';
 import { PackageService } from './package-service.entity';
 import { PatientPackage, PatientPackageStatus } from './patient-package.entity';
+import { PatientPackageService } from './patient-package-service.entity';
+import { Service } from '../services/service.entity';
+import { FinanceService } from '../finance/finance.service';
+import { In } from 'typeorm';
 import {
   CreatePackageDto,
   UpdatePackageDto,
@@ -34,6 +38,10 @@ export class PackagesService {
     private packageServicesRepo: Repository<PackageService>,
     @InjectRepository(PatientPackage)
     private patientPackagesRepo: Repository<PatientPackage>,
+    @InjectRepository(PatientPackageService)
+    private quotasRepo: Repository<PatientPackageService>,
+    @InjectRepository(Service)
+    private servicesRepo: Repository<Service>,
     @InjectRepository(Session)
     private sessionsRepo: Repository<Session>,
     @InjectRepository(Doctor)
@@ -43,6 +51,7 @@ export class PackagesService {
     private schedulingService: SchedulingService,
     private readonly notifications: NotificationsService,
     private readonly settings: SettingsService,
+    private readonly finance: FinanceService,
   ) {}
 
   // ──────────── Package CRUD ────────────
@@ -143,6 +152,7 @@ export class PackagesService {
       package_id: dto.package_id,
       remaining_sessions: totalSessions,
       status: PatientPackageStatus.ACTIVE,
+      payment_verified: true,
       start_date: startDate,
       end_date: endDate,
       discount_type: dto.discount_type,
@@ -165,6 +175,7 @@ export class PackagesService {
     }
 
     const savedPP = await this.patientPackagesRepo.save(patientPackage);
+    await this.copyQuotas(savedPP.id, pkg.package_services || []);
 
     if (dto.auto_book && pkg.package_services?.length > 0) {
       // Find the doctor from the last session for this patient.
@@ -302,7 +313,7 @@ export class PackagesService {
 
   async findAllPatientPackages(): Promise<PatientPackage[]> {
     return this.patientPackagesRepo.find({
-      relations: ['package', 'package.package_services', 'package.package_services.service'],
+      relations: ['package', 'package.package_services', 'package.package_services.service', 'quotas', 'quotas.service'],
       order: { created_at: 'DESC' },
     });
   }
@@ -310,7 +321,7 @@ export class PackagesService {
   async getPatientPackages(patientId: string): Promise<PatientPackage[]> {
     return this.patientPackagesRepo.find({
       where: { patient_id: patientId },
-      relations: ['package', 'package.package_services', 'package.package_services.service'],
+      relations: ['package', 'package.package_services', 'package.package_services.service', 'quotas', 'quotas.service'],
       order: { created_at: 'DESC' },
     });
   }
@@ -355,6 +366,216 @@ export class PackagesService {
     const saved = await this.patientPackagesRepo.save(pp);
     await this.alertIfPackageEnding(saved);
     return saved;
+  }
+
+  async assignServicesFromSession(
+    sessionId: string,
+    lines: Array<{ service_id: string; session_count: number }>,
+  ) {
+    if (!lines?.length) {
+      throw new BadRequestException('اختر خدمة واحدة على الأقل وعدد جلساتها');
+    }
+
+    const session = await this.sessionsRepo.findOne({ where: { id: sessionId } });
+    if (!session) throw new NotFoundException('Session not found');
+    const alreadyAssigned = await this.patientPackagesRepo.findOne({
+      where: { notes: `session:${session.id}` },
+    });
+    if (alreadyAssigned) {
+      throw new BadRequestException('خدمات الجلسة دي اتحددت قبل كده');
+    }
+    if (
+      session.session_type !== SessionType.ASSESSMENT &&
+      session.session_type !== SessionType.RE_ASSESSMENT
+    ) {
+      throw new BadRequestException('تحديد الخدمات يكون بعد جلسة التقييم');
+    }
+
+    const services = await this.servicesRepo.find({
+      where: { id: In(lines.map((line) => line.service_id)) },
+    });
+
+    let totalSessions = 0;
+    let totalPrice = 0;
+    const normalized = lines.map((line) => {
+      const service = services.find((item) => item.id === line.service_id);
+      const count = Number(line.session_count);
+      if (!service || !service.is_active || service.is_assessment) {
+        throw new BadRequestException('الخدمة غير متاحة للعلاج');
+      }
+      if (!Number.isInteger(count) || count < 1) {
+        throw new BadRequestException('عدد الجلسات لازم يكون 1 أو أكثر');
+      }
+      totalSessions += count;
+      totalPrice += Number(service.price || 0) * count;
+      return { service, count };
+    });
+
+    const pkg = await this.packagesRepo.save(
+      this.packagesRepo.create({
+        name: 'خدمات بعد التقييم',
+        description: `session:${session.id}`,
+        is_custom: true,
+        is_active: true,
+        total_sessions: totalSessions,
+        price: totalPrice,
+      }),
+    );
+
+    await this.packageServicesRepo.save(
+      normalized.map((line) =>
+        this.packageServicesRepo.create({
+          package_id: pkg.id,
+          service_id: line.service.id,
+          session_count: line.count,
+        }),
+      ),
+    );
+
+    const patientPackage = await this.patientPackagesRepo.save(
+      this.patientPackagesRepo.create({
+        patient_id: session.patient_id,
+        package_id: pkg.id,
+        remaining_sessions: totalSessions,
+        status: PatientPackageStatus.SUSPENDED,
+        payment_verified: false,
+        final_price: totalPrice,
+        notes: `session:${session.id}`,
+        start_date: new Date(),
+      }),
+    );
+
+    await this.copyQuotas(
+      patientPackage.id,
+      normalized.map((line) => ({
+        service_id: line.service.id,
+        session_count: line.count,
+      })),
+    );
+
+    await this.finance.createPendingCharge({
+      patient_id: session.patient_id,
+      amount: totalPrice,
+      patient_package_id: patientPackage.id,
+    });
+
+    if (!session.end_time) {
+      session.end_time = new Date();
+      session.status = SessionStatus.ATTENDED;
+      await this.sessionsRepo.save(session);
+    }
+
+    return this.patientPackagesRepo.findOne({
+      where: { id: patientPackage.id },
+      relations: ['package', 'quotas', 'quotas.service'],
+    });
+  }
+
+  async verifyPatientPackagePayment(id: string): Promise<PatientPackage> {
+    const patientPackage = await this.patientPackagesRepo.findOne({ where: { id } });
+    if (!patientPackage) throw new NotFoundException('Patient package not found');
+    patientPackage.payment_verified = true;
+    if (patientPackage.status === PatientPackageStatus.SUSPENDED) {
+      patientPackage.status = PatientPackageStatus.ACTIVE;
+    }
+    const saved = await this.patientPackagesRepo.save(patientPackage);
+    await this.finance.settleCharges({ patient_package_id: id });
+    return saved;
+  }
+
+  async assignCustomServices(
+    patientId: string,
+    lines: Array<{ service_id: string; session_count: number }>,
+  ) {
+    if (!patientId) throw new BadRequestException('المريض مطلوب');
+    if (!lines?.length) {
+      throw new BadRequestException('اختر خدمة واحدة على الأقل وعدد جلساتها');
+    }
+    const services = await this.servicesRepo.find({
+      where: { id: In(lines.map((line) => line.service_id)) },
+    });
+    let totalSessions = 0;
+    let totalPrice = 0;
+    const normalized = lines.map((line) => {
+      const service = services.find((item) => item.id === line.service_id);
+      const count = Number(line.session_count);
+      if (!service || !service.is_active || service.is_assessment) {
+        throw new BadRequestException('الخدمة غير متاحة للعلاج');
+      }
+      if (!Number.isInteger(count) || count < 1) {
+        throw new BadRequestException('عدد الجلسات لازم يكون 1 أو أكثر');
+      }
+      totalSessions += count;
+      totalPrice += Number(service.price || 0) * count;
+      return { service, count };
+    });
+    const title = normalized.map((line) => line.service.name).join('، ');
+    const pkg = await this.packagesRepo.save(
+      this.packagesRepo.create({
+        name: title.length > 240 ? `${title.slice(0, 237)}...` : title,
+        description: title,
+        is_custom: true,
+        is_active: true,
+        total_sessions: totalSessions,
+        price: totalPrice,
+      }),
+    );
+    await this.packageServicesRepo.save(
+      normalized.map((line) =>
+        this.packageServicesRepo.create({
+          package_id: pkg.id,
+          service_id: line.service.id,
+          session_count: line.count,
+        }),
+      ),
+    );
+    const patientPackage = await this.patientPackagesRepo.save(
+      this.patientPackagesRepo.create({
+        patient_id: patientId,
+        package_id: pkg.id,
+        remaining_sessions: totalSessions,
+        status: PatientPackageStatus.SUSPENDED,
+        payment_verified: false,
+        final_price: totalPrice,
+        notes: 'from-profile',
+        start_date: new Date(),
+      }),
+    );
+    await this.copyQuotas(
+      patientPackage.id,
+      normalized.map((line) => ({
+        service_id: line.service.id,
+        session_count: line.count,
+      })),
+    );
+    await this.finance.createPendingCharge({
+      patient_id: patientId,
+      amount: totalPrice,
+      patient_package_id: patientPackage.id,
+    });
+    return this.patientPackagesRepo.findOne({
+      where: { id: patientPackage.id },
+      relations: ['package', 'quotas', 'quotas.service'],
+    });
+  }
+
+  private async copyQuotas(
+    patientPackageId: string,
+    lines: Array<{ service_id: string; session_count: number }>,
+  ) {
+    const rows = lines
+      .filter((line) => line.session_count > 0)
+      .map((line) =>
+        this.quotasRepo.create({
+          patient_package_id: patientPackageId,
+          service_id: line.service_id,
+          session_count: line.session_count,
+          remaining_sessions: line.session_count,
+        }),
+      );
+    if (rows.length > 0) {
+      await this.quotasRepo.save(rows);
+    }
   }
 
   private async alertIfPackageEnding(patientPackage: PatientPackage): Promise<void> {

@@ -56,6 +56,11 @@ export class CreateServiceDto {
   @IsOptional()
   @IsBoolean()
   is_active?: boolean;
+
+  @ApiPropertyOptional({ description: 'True when this service is an assessment visit' })
+  @IsOptional()
+  @IsBoolean()
+  is_assessment?: boolean;
 }
 
 export class UpdateServiceDto extends PartialType(CreateServiceDto) {

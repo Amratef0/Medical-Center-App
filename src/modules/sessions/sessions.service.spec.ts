@@ -66,6 +66,10 @@ describe('SessionsService.calculateDurationAndAlert', () => {
       {} as never,
       {} as never,
       notifications as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      { settleCharges: async () => undefined } as never,
     );
     const saved = await withStore.verifyPayment('s', { name: 'Finance', email: 'f@test.com' } as never);
     expect(saved.payment_verified).toBe(true);

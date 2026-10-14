@@ -58,6 +58,10 @@ export class Service {
   @Column({ default: 100 })
   sort_order: number;
 
+  @ApiProperty({ description: 'Assessment visit billed on its own, not a treatment quota', default: false })
+  @Column({ default: false })
+  is_assessment: boolean;
+
   @ApiProperty()
   @Column({ default: true })
   is_active: boolean;

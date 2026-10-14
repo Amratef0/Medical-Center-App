@@ -5,10 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Package } from './package.entity';
+import { PatientPackageService } from './patient-package-service.entity';
 
 export enum PatientPackageStatus {
   ACTIVE = 'ACTIVE',
@@ -46,6 +48,13 @@ export class PatientPackage {
   @ApiProperty()
   @Column({ name: 'remaining_sessions' })
   remaining_sessions: number;
+
+  @ApiProperty({ description: 'Finance has confirmed payment for this package', default: false })
+  @Column({ name: 'payment_verified', default: false })
+  payment_verified: boolean;
+
+  @OneToMany(() => PatientPackageService, (line) => line.patient_package)
+  quotas: PatientPackageService[];
 
   @ApiProperty({ required: false })
   @Column({ type: 'date', nullable: true })

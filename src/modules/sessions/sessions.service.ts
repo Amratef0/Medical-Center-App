@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, EntityManager } from 'typeorm';
 import { Session, SessionConfirmStatus, SessionStatus, SessionType } from './session.entity';
 import { Attendance } from './attendance.entity';
 import { CreateSessionDto, UpdateSessionDto, CreateAttendanceDto } from './dto/session.dto';
@@ -10,6 +10,10 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { CapacityService } from '../capacity/capacity.service';
 import { SettingsService, CLINIC_TIMEZONE } from '../settings/settings.service';
 import { AttendanceStatus } from './attendance.entity';
+import { Service } from '../services/service.entity';
+import { PatientPackage, PatientPackageStatus } from '../packages/patient-package.entity';
+import { PatientPackageService } from '../packages/patient-package-service.entity';
+import { FinanceService } from '../finance/finance.service';
 
 @Injectable()
 export class SessionsService {
@@ -24,16 +28,45 @@ export class SessionsService {
     private readonly notifications: NotificationsService,
     private readonly capacityService: CapacityService,
     private readonly settings: SettingsService,
+    @InjectRepository(Service)
+    private servicesRepo: Repository<Service>,
+    private readonly finance: FinanceService,
   ) {}
 
   async create(dto: CreateSessionDto): Promise<Session> {
-    const durationMinutes = SchedulingValidator.resolveDurationMinutes(
-      dto.scheduled_duration_minutes,
-      dto.session_type,
-    );
-    const startsAt = new Date(dto.session_date);
+    const service = dto.service_id
+      ? await this.servicesRepo.findOne({ where: { id: dto.service_id } })
+      : null;
 
-    return this.schedulingValidator.runInTransaction(async (queryRunner) => {
+    let sessionType = dto.session_type;
+    if (service?.is_assessment) {
+      sessionType = SessionType.ASSESSMENT;
+    } else if (service && sessionType === SessionType.ASSESSMENT) {
+      sessionType = SessionType.TREATMENT;
+    }
+
+    const startsAt = new Date(dto.session_date);
+    let durationMinutes = SchedulingValidator.resolveDurationMinutes(
+      dto.scheduled_duration_minutes,
+      sessionType,
+    );
+    let endTime: Date | undefined;
+    if (dto.end_time) {
+      endTime = new Date(dto.end_time);
+      if (Number.isNaN(endTime.getTime()) || endTime <= startsAt) {
+        throw new BadRequestException('ميعاد النهاية لازم يكون بعد البداية');
+      }
+      durationMinutes = Math.max(
+        15,
+        Math.round((endTime.getTime() - startsAt.getTime()) / 60000),
+      );
+    }
+
+    if (sessionType === SessionType.TREATMENT && (!dto.patient_package_id || !dto.service_id)) {
+      throw new BadRequestException('حجز العلاج يكون من خدمة مدفوعة داخل باكدج المريض');
+    }
+
+    const saved = await this.schedulingValidator.runInTransaction(async (queryRunner) => {
       await this.schedulingValidator.assertSlotIsBookable(
         {
           sessionId: null,
@@ -47,17 +80,84 @@ export class SessionsService {
         queryRunner,
       );
 
+      if (sessionType === SessionType.TREATMENT) {
+        await this.consumePaidService(
+          queryRunner.manager,
+          dto.patient_package_id as string,
+          dto.service_id as string,
+        );
+      }
+
       const session = queryRunner.manager.create(Session, {
         ...dto,
+        session_type: sessionType,
         scheduled_duration_minutes: durationMinutes,
-        payment_verified: false, // Default to unverified for all session types until payment is confirmed
+        end_time: undefined,
+        payment_verified: false,
       });
-      const saved = await queryRunner.manager.save(session);
-      return saved;
-    }).then(async (saved) => {
-      await this.capacityService.handlePostBookingAlerts(saved);
-      return saved;
+      return queryRunner.manager.save(session);
     });
+
+    await this.capacityService.handlePostBookingAlerts(saved);
+
+    if (sessionType === SessionType.ASSESSMENT) {
+      await this.finance.createPendingCharge({
+        patient_id: saved.patient_id,
+        amount: Number(service?.price || 0),
+        session_id: saved.id,
+      });
+    }
+
+    return saved;
+  }
+
+  private assertCanBegin(session: Session) {
+    if (session.confirm_status !== SessionConfirmStatus.CONFIRMED) {
+      throw new BadRequestException('يجب تأكيد الحجز من الاستقبال قبل بدء الجلسة');
+    }
+    if (
+      (session.session_type === SessionType.ASSESSMENT ||
+        session.session_type === SessionType.RE_ASSESSMENT) &&
+      !session.payment_verified
+    ) {
+      throw new BadRequestException(
+        'لا يمكن بدء جلسة التقييم قبل تأكيد الدفع من الحسابات',
+      );
+    }
+  }
+
+  private async consumePaidService(
+    manager: EntityManager,
+    patientPackageId: string,
+    serviceId: string,
+  ) {
+    const patientPackage = await manager.findOne(PatientPackage, {
+      where: { id: patientPackageId },
+      lock: { mode: 'pessimistic_write' },
+    });
+    if (!patientPackage) throw new NotFoundException('Patient package not found');
+    if (
+      !patientPackage.payment_verified ||
+      patientPackage.status !== PatientPackageStatus.ACTIVE
+    ) {
+      throw new BadRequestException('لا يمكن حجز العلاج قبل اعتماد دفع الباكدج');
+    }
+
+    const line = await manager.findOne(PatientPackageService, {
+      where: { patient_package_id: patientPackageId, service_id: serviceId },
+      lock: { mode: 'pessimistic_write' },
+    });
+    if (!line || line.remaining_sessions <= 0) {
+      throw new BadRequestException('لا توجد جلسات متبقية لهذه الخدمة');
+    }
+
+    line.remaining_sessions -= 1;
+    patientPackage.remaining_sessions = Math.max(0, Number(patientPackage.remaining_sessions) - 1);
+    if (patientPackage.remaining_sessions === 0) {
+      patientPackage.status = PatientPackageStatus.EXHAUSTED;
+    }
+    await manager.save(line);
+    await manager.save(patientPackage);
   }
 
   async getCalendarView(from: string, to: string, doctor_id?: string, room_id?: string) {
@@ -214,15 +314,19 @@ export class SessionsService {
 
   async confirm(id: string, status: SessionConfirmStatus): Promise<Session> {
     const session = await this.findOne(id);
+    const needsPayment =
+      session.session_type === SessionType.ASSESSMENT ||
+      session.session_type === SessionType.RE_ASSESSMENT;
+    if (status === SessionConfirmStatus.CONFIRMED && needsPayment && !session.payment_verified) {
+      throw new BadRequestException('لا يمكن تأكيد الحجز قبل اعتماد الدفع من الحسابات');
+    }
     session.confirm_status = status;
     return this.sessionsRepo.save(session);
   }
 
   async startSession(id: string): Promise<Session> {
     const session = await this.findOne(id);
-    if (session.session_type === SessionType.ASSESSMENT && !session.payment_verified) {
-      throw new BadRequestException('⛔ لا يمكن بدء جلسة التقييم قبل تأكيد الدفع من الحسابات | Assessment session cannot begin until payment is verified by Finance');
-    }
+    this.assertCanBegin(session);
     session.start_time = new Date();
     return this.sessionsRepo.save(session);
   }
@@ -239,9 +343,7 @@ export class SessionsService {
 
   async checkIn(sessionId: string): Promise<{ session: Session; attendance: Attendance }> {
     const session = await this.findOne(sessionId);
-    if (session.session_type === SessionType.ASSESSMENT && !session.payment_verified) {
-      throw new BadRequestException('⛔ لا يمكن بدء جلسة التقييم قبل تأكيد الدفع من الحسابات | Assessment session cannot begin until payment is verified by Finance');
-    }
+    this.assertCanBegin(session);
     session.start_time = new Date();
     await this.sessionsRepo.save(session);
 
@@ -326,6 +428,7 @@ export class SessionsService {
     session.payment_verified_by = this.staffDisplayName(user);
     session.payment_verified_at = new Date();
     const saved = await this.sessionsRepo.save(session);
+    await this.finance.settleCharges({ session_id: id });
     if (saved.session_type === SessionType.ASSESSMENT) {
       const name = saved.patient?.full_name_ar || saved.patient?.first_name || 'Patient';
       await this.safeNotify(() => this.notifications.notifyPaymentVerified(name, saved.id));

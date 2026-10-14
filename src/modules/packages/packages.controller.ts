@@ -83,10 +83,20 @@ export class PackagesController {
 
 @ApiTags('Patient Packages')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAccessGuard, RolesGuard)
+@UseGuards(JwtAccessGuard, RolesGuard, PermissionsGuard)
 @Controller('patient-packages')
 export class PatientPackagesController {
   constructor(private readonly packagesService: PackagesService) {}
+
+  @Post('custom')
+  @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN, UserRole.DOCTOR)
+  @ApiOperation({ summary: 'Create a pending treatment package from the patient profile' })
+  assignCustom(
+    @Body('patient_id') patientId: string,
+    @Body('lines') lines: Array<{ service_id: string; session_count: number }>,
+  ) {
+    return this.packagesService.assignCustomServices(patientId, lines || []);
+  }
 
   @Get()
   @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN, UserRole.DOCTOR, UserRole.FINANCE)
@@ -107,5 +117,13 @@ export class PatientPackagesController {
   @ApiOperation({ summary: 'Deduct a session from a patient package' })
   deductSession(@Param('id') id: string) {
     return this.packagesService.deductSession(id);
+  }
+
+  @Post(':id/verify-payment')
+  @Roles(UserRole.FINANCE, UserRole.ADMIN, UserRole.RECEPTIONIST)
+  @RequirePermission('finance.verify_payment')
+  @ApiOperation({ summary: 'Confirm payment for a treatment package' })
+  verifyPayment(@Param('id') id: string) {
+    return this.packagesService.verifyPatientPackagePayment(id);
   }
 }

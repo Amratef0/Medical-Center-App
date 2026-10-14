@@ -217,4 +217,53 @@ export class FinanceService {
 
     return `INV-${year}-${String(sequence).padStart(5, '0')}`;
   }
+
+  async createPendingCharge(input: {
+    patient_id: string;
+    amount: number;
+    session_id?: string;
+    patient_package_id?: string;
+  }): Promise<Payment> {
+    const payment = await this.paymentsRepo.save(
+      this.paymentsRepo.create({
+        patient_id: input.patient_id,
+        amount: input.amount,
+        discount: 0,
+        session_id: input.session_id,
+        patient_package_id: input.patient_package_id,
+        status: PaymentStatus.PENDING,
+        approval_status: ApprovalStatus.PENDING,
+      }),
+    );
+    await this.createInvoice({
+      patient_id: input.patient_id,
+      payment_id: payment.id,
+      subtotal: input.amount,
+      discount: 0,
+    });
+    return payment;
+  }
+
+  async settleCharges(where: { session_id?: string; patient_package_id?: string }): Promise<void> {
+    const filter = where.session_id
+      ? { session_id: where.session_id }
+      : where.patient_package_id
+        ? { patient_package_id: where.patient_package_id }
+        : null
+    if (!filter) return
+    const payments = await this.paymentsRepo.find({ where: filter });
+    for (const payment of payments) {
+      if (payment.status === PaymentStatus.PAID) continue;
+      payment.status = PaymentStatus.PAID;
+      payment.approval_status = ApprovalStatus.APPROVED;
+      payment.approved_at = new Date();
+      await this.paymentsRepo.save(payment);
+      const invoice = await this.invoicesRepo.findOne({ where: { payment_id: payment.id } });
+      if (invoice && invoice.status !== InvoiceStatus.PAID) {
+        invoice.status = InvoiceStatus.PAID;
+        invoice.paid_at = new Date();
+        await this.invoicesRepo.save(invoice);
+      }
+    }
+  }
 }

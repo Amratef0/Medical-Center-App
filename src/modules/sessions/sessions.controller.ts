@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query,UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { SessionsService } from './sessions.service';
+import { PackagesService } from '../packages/packages.service';
 import { CreateSessionDto, UpdateSessionDto, CreateAttendanceDto } from './dto/session.dto';
 import { JwtAccessGuard } from '../../common/guards/jwt.guards';
 import { AllowAnyStaff, RolesGuard, Roles } from '../../common/guards/roles.guard';
@@ -15,7 +16,10 @@ import { SessionConfirmStatus } from './session.entity';
 @UseGuards(JwtAccessGuard, RolesGuard, PermissionsGuard)
 @Controller('sessions')
 export class SessionsController {
-  constructor(private readonly sessionsService: SessionsService) {}
+  constructor(
+    private readonly sessionsService: SessionsService,
+    private readonly packagesService: PackagesService,
+  ) {}
 
   @Post()
   @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN, UserRole.OPERATIONS_MANAGER)
@@ -149,6 +153,16 @@ findByPatient(
   @ApiOperation({ summary: 'Mark session as ended' })
   endSession(@Param('id') id: string) {
     return this.sessionsService.endSession(id);
+  }
+
+  @Post(':id/assigned-services')
+  @Roles(UserRole.DOCTOR, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Doctor assigns treatment services and session counts after assessment' })
+  assignServices(
+    @Param('id') id: string,
+    @Body('lines') lines: Array<{ service_id: string; session_count: number }>,
+  ) {
+    return this.packagesService.assignServicesFromSession(id, lines || []);
   }
 
   @Post(':id/verify-payment')

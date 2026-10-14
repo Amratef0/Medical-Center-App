@@ -51,6 +51,10 @@ export class Payment {
   @Column({ nullable: true })
   patient_package_id: string;
 
+  @ApiProperty({ required: false, description: 'Assessment session this charge belongs to' })
+  @Column({ type: 'uuid', nullable: true })
+  session_id: string;
+
   @ApiProperty()
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount: number;

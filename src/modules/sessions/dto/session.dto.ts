@@ -61,6 +61,11 @@ export class CreateSessionDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsDateString()
+  end_time?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsNumber()
   scheduled_duration_minutes?: number;
 }
